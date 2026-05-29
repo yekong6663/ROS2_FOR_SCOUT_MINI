@@ -1,4 +1,0 @@
-Invoking command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /workspaces/ROS2_For_SCOUT_MINI/build/scout_description -- -j4 -l4
-Invoked command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --build /workspaces/ROS2_For_SCOUT_MINI/build/scout_description -- -j4 -l4
-Invoking command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /workspaces/ROS2_For_SCOUT_MINI/build/scout_description
-Invoked command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description' returned '0': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake --install /workspaces/ROS2_For_SCOUT_MINI/build/scout_description

@@ -1,1 +1,0 @@
-Invoking command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_msgs': CMAKE_PREFIX_PATH=/opt/ros/humble /usr/bin/cmake /workspaces/ROS2_For_SCOUT_MINI/src/scout_ros2/scout_msgs -DCMAKE_INSTALL_PREFIX=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs
