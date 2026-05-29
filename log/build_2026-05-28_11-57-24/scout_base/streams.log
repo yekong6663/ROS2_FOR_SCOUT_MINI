@@ -1,0 +1,88 @@
+[0.021s] Invoking command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base': AMENT_PREFIX_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs LD_LIBRARY_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:${LD_LIBRARY_PATH} PKG_CONFIG_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig PYTHONPATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} ROS_PACKAGE_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share /usr/bin/cmake /workspaces/ROS2_For_SCOUT_MINI/src/scout_ros2/scout_base -DCMAKE_INSTALL_PREFIX=/workspaces/ROS2_For_SCOUT_MINI/install/scout_base
+[0.208s] -- The C compiler identification is GNU 11.4.0
+[0.267s] -- The CXX compiler identification is GNU 11.4.0
+[0.275s] -- Detecting C compiler ABI info
+[0.350s] -- Detecting C compiler ABI info - done
+[0.356s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.356s] -- Detecting C compile features
+[0.357s] -- Detecting C compile features - done
+[0.361s] -- Detecting CXX compiler ABI info
+[0.449s] -- Detecting CXX compiler ABI info - done
+[0.463s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.463s] -- Detecting CXX compile features
+[0.464s] -- Detecting CXX compile features - done
+[0.483s] -- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.740s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.854s] -- Found rclcpp: 16.0.19 (/opt/ros/humble/share/rclcpp/cmake)
+[0.937s] -- Found rosidl_generator_c: 3.1.8 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.946s] -- Found rosidl_adapter: 3.1.8 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.959s] -- Found rosidl_generator_cpp: 3.1.8 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[0.983s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.006s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.086s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[1.092s] -- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[1.234s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[1.265s] -- Found FastRTPS: /opt/ros/humble/include  
+[1.312s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.335s] -- Looking for pthread.h
+[1.415s] -- Looking for pthread.h - found
+[1.416s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[1.518s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[1.519s] -- Found Threads: TRUE  
+[1.630s] -- Found geometry_msgs: 4.9.1 (/opt/ros/humble/share/geometry_msgs/cmake)
+[1.650s] -- Found nav_msgs: 4.9.1 (/opt/ros/humble/share/nav_msgs/cmake)
+[1.674s] -- Found sensor_msgs: 4.9.1 (/opt/ros/humble/share/sensor_msgs/cmake)
+[1.701s] -- Found tf2: 0.25.20 (/opt/ros/humble/share/tf2/cmake)
+[1.718s] -- Found tf2_ros: 0.25.20 (/opt/ros/humble/share/tf2_ros/cmake)
+[1.837s] -- Found tf2_geometry_msgs: 0.25.20 (/opt/ros/humble/share/tf2_geometry_msgs/cmake)
+[1.861s] -- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+[1.863s] -- Found Eigen3: TRUE (found version "3.4.0") 
+[1.863s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[1.866s] -- Found scout_msgs: 0.1.0 (/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake)
+[1.886s] -- Found ament_lint_auto: 0.12.15 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[1.977s] -- Added test 'copyright' to check source files copyright and LICENSE
+[1.979s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[1.979s] -- Configured cppcheck include dirs: /workspaces/ROS2_For_SCOUT_MINI/src/scout_ros2/scout_base/include
+[1.979s] -- Configured cppcheck exclude dirs and/or files: 
+[1.980s] -- Added test 'cpplint' to check C / C++ code against the Google style
+[1.980s] -- Configured cpplint exclude dirs and/or files: 
+[1.981s] -- Added test 'flake8' to check Python code syntax and style conventions
+[1.982s] -- Added test 'lint_cmake' to check CMake code style
+[1.983s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[1.984s] -- Added test 'uncrustify' to check C / C++ code style
+[1.984s] -- Configured uncrustify additional arguments: 
+[1.985s] -- Added test 'xmllint' to check XML markup files
+[1.986s] -- Configuring done
+[2.003s] -- Generating done
+[2.008s] -- Build files have been written to: /workspaces/ROS2_For_SCOUT_MINI/build/scout_base
+[2.019s] Invoked command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base' returned '0': AMENT_PREFIX_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs LD_LIBRARY_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:${LD_LIBRARY_PATH} PKG_CONFIG_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig PYTHONPATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} ROS_PACKAGE_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share /usr/bin/cmake /workspaces/ROS2_For_SCOUT_MINI/src/scout_ros2/scout_base -DCMAKE_INSTALL_PREFIX=/workspaces/ROS2_For_SCOUT_MINI/install/scout_base
+[2.021s] Invoking command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base': AMENT_PREFIX_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs LD_LIBRARY_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:${LD_LIBRARY_PATH} PKG_CONFIG_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig PYTHONPATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} ROS_PACKAGE_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share /usr/bin/cmake --build /workspaces/ROS2_For_SCOUT_MINI/build/scout_base -- -j4 -l4
+[2.072s] [ 33%] [32mBuilding CXX object CMakeFiles/scout_base_node.dir/src/scout_base_ros.cpp.o[0m
+[2.072s] [ 66%] [32mBuilding CXX object CMakeFiles/scout_base_node.dir/src/scout_base_node.cpp.o[0m
+[20.802s] [100%] [32m[1mLinking CXX executable scout_base_node[0m
+[21.645s] [100%] Built target scout_base_node
+[21.656s] Invoked command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base' returned '0': AMENT_PREFIX_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs LD_LIBRARY_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:${LD_LIBRARY_PATH} PKG_CONFIG_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig PYTHONPATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} ROS_PACKAGE_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share /usr/bin/cmake --build /workspaces/ROS2_For_SCOUT_MINI/build/scout_base -- -j4 -l4
+[21.658s] Invoking command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base': AMENT_PREFIX_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs LD_LIBRARY_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:${LD_LIBRARY_PATH} PKG_CONFIG_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig PYTHONPATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} ROS_PACKAGE_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share /usr/bin/cmake --install /workspaces/ROS2_For_SCOUT_MINI/build/scout_base
+[21.665s] -- Install configuration: ""
+[21.666s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/lib/scout_base/scout_base_node
+[21.672s] -- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_base/lib/scout_base/scout_base_node" to ""
+[21.672s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base//launch
+[21.672s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base//launch/scout_mini_omni_base.launch.py
+[21.673s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base//launch/scout_mini_base.launch.py
+[21.673s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base//launch/scout_base.launch.py
+[21.673s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/ament_index/resource_index/package_run_dependencies/scout_base
+[21.673s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/ament_index/resource_index/parent_prefix_path/scout_base
+[21.673s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/environment/ament_prefix_path.sh
+[21.673s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/environment/ament_prefix_path.dsv
+[21.674s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/environment/path.sh
+[21.674s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/environment/path.dsv
+[21.674s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/local_setup.bash
+[21.674s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/local_setup.sh
+[21.674s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/local_setup.zsh
+[21.674s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/local_setup.dsv
+[21.675s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/package.dsv
+[21.675s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/ament_index/resource_index/packages/scout_base
+[21.675s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/cmake/scout_baseConfig.cmake
+[21.675s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/cmake/scout_baseConfig-version.cmake
+[21.675s] -- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/package.xml
+[21.677s] Invoked command in '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base' returned '0': AMENT_PREFIX_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs LD_LIBRARY_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:${LD_LIBRARY_PATH} PKG_CONFIG_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig PYTHONPATH=/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:${PYTHONPATH} ROS_PACKAGE_PATH=/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share /usr/bin/cmake --install /workspaces/ROS2_For_SCOUT_MINI/build/scout_base

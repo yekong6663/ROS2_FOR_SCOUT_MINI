@@ -1,0 +1,36 @@
+[33mCMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CATKIN_INSTALL_INTO_PREFIX_ROOT
+
+[0m
+In file included from [01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/include/ugv_sdk/utilities/protocol_detector.hpp:15[m[K,
+                 from [01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/src/utilities/protocol_detector.cpp:10[m[K:
+[01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/include/ugv_sdk/details/async_port/async_can.hpp:24:10:[m[K [01;31m[Kfatal error: [m[Kasio.hpp: No such file or directory
+   24 | #include [01;31m[K"asio.hpp"[m[K
+      |          [01;31m[K^~~~~~~~~~[m[K
+compilation terminated.
+In file included from [01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/src/async_port/async_can.cpp:10[m[K:
+[01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/include/ugv_sdk/details/async_port/async_can.hpp:24:10:[m[K [01;31m[Kfatal error: [m[Kasio.hpp: No such file or directory
+   24 | #include [01;31m[K"asio.hpp"[m[K
+      |          [01;31m[K^~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/ugv_sdk.dir/build.make:90: CMakeFiles/ugv_sdk.dir/src/async_port/async_can.cpp.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[2]: *** [CMakeFiles/ugv_sdk.dir/build.make:104: CMakeFiles/ugv_sdk.dir/src/utilities/protocol_detector.cpp.o] Error 1
+In file included from [01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/src/async_port/async_serial.cpp:10[m[K:
+[01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/include/ugv_sdk/details/async_port/async_serial.hpp:20:10:[m[K [01;31m[Kfatal error: [m[Kasio.hpp: No such file or directory
+   20 | #include [01;31m[K"asio.hpp"[m[K
+      |          [01;31m[K^~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/ugv_sdk.dir/build.make:76: CMakeFiles/ugv_sdk.dir/src/async_port/async_serial.cpp.o] Error 1
+In file included from [01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/include/ugv_sdk/details/robot_base/agilex_base.hpp:21[m[K,
+                 from [01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/include/ugv_sdk/details/robot_base/scout_base.hpp:19[m[K,
+                 from [01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/src/mobile_robot/scout_robot.cpp:11[m[K:
+[01m[K/workspaces/ROS2_For_SCOUT_MINI/src/ugv_sdk/include/ugv_sdk/details/async_port/async_can.hpp:24:10:[m[K [01;31m[Kfatal error: [m[Kasio.hpp: No such file or directory
+   24 | #include [01;31m[K"asio.hpp"[m[K
+      |          [01;31m[K^~~~~~~~~~[m[K
+compilation terminated.
+gmake[2]: *** [CMakeFiles/ugv_sdk.dir/build.make:118: CMakeFiles/ugv_sdk.dir/src/mobile_robot/scout_robot.cpp.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:209: CMakeFiles/ugv_sdk.dir/all] Error 2
+gmake: *** [Makefile:156: all] Error 2

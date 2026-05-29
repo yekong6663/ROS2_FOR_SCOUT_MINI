@@ -1,0 +1,960 @@
+[0.000000] (-) TimerEvent: {}
+[0.001844] (scout_description) JobQueued: {'identifier': 'scout_description', 'dependencies': OrderedDict()}
+[0.002099] (scout_msgs) JobQueued: {'identifier': 'scout_msgs', 'dependencies': OrderedDict()}
+[0.002386] (ugv_sdk) JobQueued: {'identifier': 'ugv_sdk', 'dependencies': OrderedDict()}
+[0.002440] (scout_base) JobQueued: {'identifier': 'scout_base', 'dependencies': OrderedDict([('scout_msgs', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs'), ('ugv_sdk', '/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk')])}
+[0.003088] (scout_msgs) JobStarted: {'identifier': 'scout_msgs'}
+[0.071141] (ugv_sdk) JobStarted: {'identifier': 'ugv_sdk'}
+[0.088897] (scout_description) JobStarted: {'identifier': 'scout_description'}
+[0.101340] (-) TimerEvent: {}
+[0.124391] (scout_msgs) JobProgress: {'identifier': 'scout_msgs', 'progress': 'cmake'}
+[0.132668] (scout_msgs) JobProgress: {'identifier': 'scout_msgs', 'progress': 'build'}
+[0.135583] (scout_msgs) Command: {'cmd': ['/usr/bin/cmake', '--build', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_msgs', '--', '-j4', '-l4'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/scout_msgs', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_msgs'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble')]), 'shell': False}
+[0.167962] (ugv_sdk) JobProgress: {'identifier': 'ugv_sdk', 'progress': 'cmake'}
+[0.178276] (ugv_sdk) JobProgress: {'identifier': 'ugv_sdk', 'progress': 'build'}
+[0.181992] (ugv_sdk) Command: {'cmd': ['/usr/bin/cmake', '--build', '/workspaces/ROS2_For_SCOUT_MINI/build/ugv_sdk', '--', '-j4', '-l4'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/ugv_sdk', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/ugv_sdk'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1')]), 'shell': False}
+[0.213472] (-) TimerEvent: {}
+[0.220064] (scout_description) JobProgress: {'identifier': 'scout_description', 'progress': 'cmake'}
+[0.223712] (scout_description) JobProgress: {'identifier': 'scout_description', 'progress': 'build'}
+[0.224987] (scout_description) Command: {'cmd': ['/usr/bin/cmake', '--build', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description', '--', '-j4', '-l4'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble')]), 'shell': False}
+[0.313668] (-) TimerEvent: {}
+[0.320195] (scout_description) CommandEnded: {'returncode': 0}
+[0.330233] (scout_description) JobProgress: {'identifier': 'scout_description', 'progress': 'install'}
+[0.376981] (scout_msgs) StdoutLine: {'line': b'[  1%] \x1b[34m\x1b[1mGenerating C code for ROS interfaces\x1b[0m\n'}
+[0.389440] (scout_description) Command: {'cmd': ['/usr/bin/cmake', '--install', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_description'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble')]), 'shell': False}
+[0.414392] (ugv_sdk) StdoutLine: {'line': b'[  3%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/mobile_robot/scout_robot.cpp.o\x1b[0m\n'}
+[0.415684] (-) TimerEvent: {}
+[0.452918] (ugv_sdk) StdoutLine: {'line': b'[  7%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/async_port/async_serial.cpp.o\x1b[0m\n'}
+[0.460131] (scout_description) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[0.463439] (ugv_sdk) StdoutLine: {'line': b'[ 10%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/async_port/async_can.cpp.o\x1b[0m\n'}
+[0.467111] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//launch\n'}
+[0.467614] (ugv_sdk) StdoutLine: {'line': b'[ 14%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/utilities/protocol_detector.cpp.o\x1b[0m\n'}
+[0.472523] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//launch/scout_base_description.launch.py\n'}
+[0.473372] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf\n'}
+[0.477943] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_v2\n'}
+[0.482229] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_v2/scout_v2.xacro\n'}
+[0.491733] (scout_msgs) StdoutLine: {'line': b'[  3%] \x1b[34m\x1b[1mGenerating Rust code for ROS interfaces\x1b[0m\n'}
+[0.491892] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_v2/scout_v2.urdf\n'}
+[0.492051] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_v2/scout_wheel_type2.xacro\n'}
+[0.492152] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_v2/scout_wheel_type1.xacro\n'}
+[0.492246] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_mini\n'}
+[0.492301] (scout_msgs) StdoutLine: {'line': b'[  4%] \x1b[34m\x1b[1mGenerating C++ code for ROS interfaces\x1b[0m\n'}
+[0.492918] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_mini/scout_mini.urdf\n'}
+[0.493078] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_mini/scout_mini_wheel.xacro\n'}
+[0.498386] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/scout_mini/scout_mini.xacro\n'}
+[0.501012] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//urdf/generate_urdf.sh\n'}
+[0.501752] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes\n'}
+[0.502755] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_v2\n'}
+[0.503318] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_v2/wheel_type2.dae\n'}
+[0.525004] (-) TimerEvent: {}
+[0.534392] (scout_msgs) StdoutLine: {'line': b'[  4%] Built target ament_cmake_python_copy_scout_msgs\n'}
+[0.547624] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_v2/wheel_type1.dae\n'}
+[0.562510] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_v2/hokuyo.dae\n'}
+[0.569447] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_v2/base_link_full.dae\n'}
+[0.569730] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_v2/base_link.dae\n'}
+[0.625034] (-) TimerEvent: {}
+[0.657359] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_mini\n'}
+[0.657846] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_mini/mini_wheel.dae\n'}
+[0.705464] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description//meshes/scout_mini/mini_base_link.dae\n'}
+[0.728415] (-) TimerEvent: {}
+[0.832328] (-) TimerEvent: {}
+[0.862620] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/ament_index/resource_index/package_run_dependencies/scout_description\n'}
+[0.865607] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/ament_index/resource_index/parent_prefix_path/scout_description\n'}
+[0.866670] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/environment/ament_prefix_path.sh\n'}
+[0.867424] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/environment/ament_prefix_path.dsv\n'}
+[0.871062] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/environment/path.sh\n'}
+[0.871336] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/environment/path.dsv\n'}
+[0.882302] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/local_setup.bash\n'}
+[0.888572] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/local_setup.sh\n'}
+[0.892313] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/local_setup.zsh\n'}
+[0.892787] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/local_setup.dsv\n'}
+[0.893452] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/package.dsv\n'}
+[0.894971] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/ament_index/resource_index/packages/scout_description\n'}
+[0.895319] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/cmake/scout_descriptionConfig.cmake\n'}
+[0.900565] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/cmake/scout_descriptionConfig-version.cmake\n'}
+[0.901210] (scout_description) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_description/share/scout_description/package.xml\n'}
+[0.919031] (scout_description) CommandEnded: {'returncode': 0}
+[0.933637] (-) TimerEvent: {}
+[1.060359] (-) TimerEvent: {}
+[1.155780] (scout_description) JobEnded: {'identifier': 'scout_description', 'rc': 0}
+[1.163353] (-) TimerEvent: {}
+[1.198010] (scout_msgs) StdoutLine: {'line': b'running egg_info\n'}
+[1.208308] (scout_msgs) StdoutLine: {'line': b'creating scout_msgs.egg-info\n'}
+[1.210840] (scout_msgs) StdoutLine: {'line': b'writing scout_msgs.egg-info/PKG-INFO\n'}
+[1.211013] (scout_msgs) StdoutLine: {'line': b'writing dependency_links to scout_msgs.egg-info/dependency_links.txt\n'}
+[1.211085] (scout_msgs) StdoutLine: {'line': b'writing top-level names to scout_msgs.egg-info/top_level.txt\n'}
+[1.211184] (scout_msgs) StdoutLine: {'line': b"writing manifest file 'scout_msgs.egg-info/SOURCES.txt'\n"}
+[1.232067] (scout_msgs) StdoutLine: {'line': b"reading manifest file 'scout_msgs.egg-info/SOURCES.txt'\n"}
+[1.232320] (scout_msgs) StdoutLine: {'line': b"writing manifest file 'scout_msgs.egg-info/SOURCES.txt'\n"}
+[1.263169] (-) TimerEvent: {}
+[1.353611] (scout_msgs) StdoutLine: {'line': b'[  4%] Built target ament_cmake_python_build_scout_msgs_egg\n'}
+[1.363284] (-) TimerEvent: {}
+[1.466312] (-) TimerEvent: {}
+[1.572324] (-) TimerEvent: {}
+[1.679627] (-) TimerEvent: {}
+[1.780380] (-) TimerEvent: {}
+[1.884302] (-) TimerEvent: {}
+[1.985230] (-) TimerEvent: {}
+[2.085901] (-) TimerEvent: {}
+[2.189564] (-) TimerEvent: {}
+[2.308421] (-) TimerEvent: {}
+[2.355087] (scout_msgs) StdoutLine: {'line': b'[  4%] Built target scout_msgs__rs\n'}
+[2.408856] (-) TimerEvent: {}
+[2.512270] (-) TimerEvent: {}
+[2.612761] (-) TimerEvent: {}
+[2.664451] (scout_msgs) StdoutLine: {'line': b'[  6%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_c.dir/rosidl_generator_c/scout_msgs/msg/detail/scout_actuator_state__functions.c.o\x1b[0m\n'}
+[2.681058] (scout_msgs) StdoutLine: {'line': b'[  7%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_c.dir/rosidl_generator_c/scout_msgs/msg/detail/scout_light_state__functions.c.o\x1b[0m\n'}
+[2.686641] (scout_msgs) StdoutLine: {'line': b'[  9%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_c.dir/rosidl_generator_c/scout_msgs/msg/detail/scout_light_cmd__functions.c.o\x1b[0m\n'}
+[2.712834] (-) TimerEvent: {}
+[2.813377] (-) TimerEvent: {}
+[2.912135] (scout_msgs) StdoutLine: {'line': b'[ 10%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_c.dir/rosidl_generator_c/scout_msgs/msg/detail/scout_rc_state__functions.c.o\x1b[0m\n'}
+[2.913476] (-) TimerEvent: {}
+[2.957615] (scout_msgs) StdoutLine: {'line': b'[ 12%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_c.dir/rosidl_generator_c/scout_msgs/msg/detail/scout_status__functions.c.o\x1b[0m\n'}
+[2.982375] (scout_msgs) StdoutLine: {'line': b'[ 12%] Built target scout_msgs__cpp\n'}
+[3.013597] (-) TimerEvent: {}
+[3.070056] (scout_msgs) StdoutLine: {'line': b'[ 14%] \x1b[34m\x1b[1mGenerating C++ type support for eProsima Fast-RTPS\x1b[0m\n'}
+[3.087747] (scout_msgs) StdoutLine: {'line': b'[ 15%] \x1b[34m\x1b[1mGenerating C++ introspection for ROS interfaces\x1b[0m\n'}
+[3.087954] (scout_msgs) StdoutLine: {'line': b'[ 17%] \x1b[34m\x1b[1mGenerating C++ type support dispatch for ROS interfaces\x1b[0m\n'}
+[3.113690] (-) TimerEvent: {}
+[3.191106] (scout_msgs) StdoutLine: {'line': b'[ 18%] \x1b[32m\x1b[1mLinking C shared library libscout_msgs__rosidl_generator_c.so\x1b[0m\n'}
+[3.213793] (-) TimerEvent: {}
+[3.318053] (-) TimerEvent: {}
+[3.424447] (-) TimerEvent: {}
+[3.525210] (-) TimerEvent: {}
+[3.625611] (-) TimerEvent: {}
+[3.625854] (scout_msgs) StdoutLine: {'line': b'[ 18%] Built target scout_msgs__rosidl_generator_c\n'}
+[3.682999] (scout_msgs) StdoutLine: {'line': b'[ 20%] \x1b[34m\x1b[1mGenerating C type support for eProsima Fast-RTPS\x1b[0m\n'}
+[3.725706] (-) TimerEvent: {}
+[3.828280] (-) TimerEvent: {}
+[3.932274] (-) TimerEvent: {}
+[4.032655] (-) TimerEvent: {}
+[4.133091] (-) TimerEvent: {}
+[4.233872] (-) TimerEvent: {}
+[4.334408] (-) TimerEvent: {}
+[4.443148] (-) TimerEvent: {}
+[4.543775] (-) TimerEvent: {}
+[4.644279] (-) TimerEvent: {}
+[4.697933] (scout_msgs) StdoutLine: {'line': b'[ 21%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/scout_msgs/msg/scout_actuator_state__type_support.cpp.o\x1b[0m\n'}
+[4.705625] (scout_msgs) StdoutLine: {'line': b'[ 23%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/scout_msgs/msg/detail/scout_actuator_state__type_support.cpp.o\x1b[0m\n'}
+[4.748331] (-) TimerEvent: {}
+[4.849048] (-) TimerEvent: {}
+[4.952709] (-) TimerEvent: {}
+[5.053627] (-) TimerEvent: {}
+[5.060197] (scout_msgs) StdoutLine: {'line': b'[ 25%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/scout_msgs/msg/detail/dds_fastrtps/scout_actuator_state__type_support.cpp.o\x1b[0m\n'}
+[5.153865] (-) TimerEvent: {}
+[5.256477] (-) TimerEvent: {}
+[5.356837] (-) TimerEvent: {}
+[5.457979] (-) TimerEvent: {}
+[5.557503] (scout_msgs) StdoutLine: {'line': b'[ 26%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/scout_msgs/msg/detail/scout_actuator_state__type_support_c.cpp.o\x1b[0m\n'}
+[5.558024] (-) TimerEvent: {}
+[5.658617] (-) TimerEvent: {}
+[5.764476] (-) TimerEvent: {}
+[5.868345] (-) TimerEvent: {}
+[5.968918] (-) TimerEvent: {}
+[5.996663] (scout_msgs) StdoutLine: {'line': b'[ 28%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/scout_msgs/msg/scout_light_cmd__type_support.cpp.o\x1b[0m\n'}
+[6.069527] (-) TimerEvent: {}
+[6.182548] (-) TimerEvent: {}
+[6.283182] (-) TimerEvent: {}
+[6.385632] (-) TimerEvent: {}
+[6.488735] (-) TimerEvent: {}
+[6.593170] (-) TimerEvent: {}
+[6.669988] (scout_msgs) StdoutLine: {'line': b'[ 29%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/scout_msgs/msg/detail/scout_light_cmd__type_support.cpp.o\x1b[0m\n'}
+[6.695524] (-) TimerEvent: {}
+[6.800461] (-) TimerEvent: {}
+[6.816401] (scout_msgs) StdoutLine: {'line': b'[ 31%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/scout_msgs/msg/scout_light_state__type_support.cpp.o\x1b[0m\n'}
+[6.904300] (-) TimerEvent: {}
+[7.004698] (-) TimerEvent: {}
+[7.105030] (-) TimerEvent: {}
+[7.205391] (-) TimerEvent: {}
+[7.222367] (ugv_sdk) StdoutLine: {'line': b'[ 17%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/mobile_robot/hunter_robot.cpp.o\x1b[0m\n'}
+[7.289291] (scout_msgs) StdoutLine: {'line': b'[ 32%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/scout_msgs/msg/scout_rc_state__type_support.cpp.o\x1b[0m\n'}
+[7.305526] (-) TimerEvent: {}
+[7.310736] (scout_msgs) StdoutLine: {'line': b'[ 34%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/scout_msgs/msg/detail/scout_light_cmd__type_support_c.cpp.o\x1b[0m\n'}
+[7.408279] (-) TimerEvent: {}
+[7.474763] (scout_msgs) StdoutLine: {'line': b'[ 35%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/scout_msgs/msg/detail/dds_fastrtps/scout_light_cmd__type_support.cpp.o\x1b[0m\n'}
+[7.508446] (-) TimerEvent: {}
+[7.612263] (-) TimerEvent: {}
+[7.712745] (-) TimerEvent: {}
+[7.780704] (scout_msgs) StdoutLine: {'line': b'[ 37%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/scout_msgs/msg/detail/scout_light_state__type_support.cpp.o\x1b[0m\n'}
+[7.816271] (-) TimerEvent: {}
+[7.920315] (-) TimerEvent: {}
+[8.024300] (-) TimerEvent: {}
+[8.110223] (scout_msgs) StdoutLine: {'line': b'[ 39%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/scout_msgs/msg/scout_status__type_support.cpp.o\x1b[0m\n'}
+[8.124413] (-) TimerEvent: {}
+[8.133503] (scout_msgs) StdoutLine: {'line': b'[ 40%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/scout_msgs/msg/detail/scout_light_state__type_support_c.cpp.o\x1b[0m\n'}
+[8.224943] (-) TimerEvent: {}
+[8.325503] (-) TimerEvent: {}
+[8.426136] (-) TimerEvent: {}
+[8.528718] (-) TimerEvent: {}
+[8.632309] (-) TimerEvent: {}
+[8.732925] (-) TimerEvent: {}
+[8.817947] (scout_msgs) StdoutLine: {'line': b'[ 42%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/scout_msgs/msg/detail/dds_fastrtps/scout_light_state__type_support.cpp.o\x1b[0m\n'}
+[8.836355] (-) TimerEvent: {}
+[8.862047] (scout_msgs) StdoutLine: {'line': b'[ 43%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/scout_msgs/msg/detail/scout_rc_state__type_support_c.cpp.o\x1b[0m\n'}
+[8.936908] (-) TimerEvent: {}
+[9.044539] (-) TimerEvent: {}
+[9.149156] (-) TimerEvent: {}
+[9.192264] (scout_msgs) StdoutLine: {'line': b'[ 45%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/scout_msgs/msg/detail/scout_rc_state__type_support.cpp.o\x1b[0m\n'}
+[9.256353] (-) TimerEvent: {}
+[9.348336] (scout_msgs) StdoutLine: {'line': b'[ 46%] \x1b[32m\x1b[1mLinking CXX shared library libscout_msgs__rosidl_typesupport_cpp.so\x1b[0m\n'}
+[9.357506] (-) TimerEvent: {}
+[9.459418] (-) TimerEvent: {}
+[9.470667] (scout_msgs) StdoutLine: {'line': b'[ 46%] Built target scout_msgs__rosidl_typesupport_cpp\n'}
+[9.496359] (scout_msgs) StdoutLine: {'line': b'[ 48%] \x1b[34m\x1b[1mGenerating C introspection for ROS interfaces\x1b[0m\n'}
+[9.564251] (-) TimerEvent: {}
+[9.667291] (-) TimerEvent: {}
+[9.767740] (-) TimerEvent: {}
+[9.868303] (-) TimerEvent: {}
+[9.890826] (ugv_sdk) StdoutLine: {'line': b'[ 21%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/mobile_robot/bunker_robot.cpp.o\x1b[0m\n'}
+[9.972276] (-) TimerEvent: {}
+[10.072851] (-) TimerEvent: {}
+[10.120444] (scout_msgs) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/scout_msgs/msg/detail/dds_fastrtps/scout_rc_state__type_support.cpp.o\x1b[0m\n'}
+[10.153883] (scout_msgs) StdoutLine: {'line': b'[ 51%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/scout_msgs/msg/detail/scout_status__type_support_c.cpp.o\x1b[0m\n'}
+[10.172956] (-) TimerEvent: {}
+[10.273293] (-) TimerEvent: {}
+[10.328267] (scout_msgs) StdoutLine: {'line': b'[ 53%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/scout_msgs/msg/detail/scout_status__type_support.cpp.o\x1b[0m\n'}
+[10.376334] (-) TimerEvent: {}
+[10.480271] (-) TimerEvent: {}
+[10.580694] (-) TimerEvent: {}
+[10.681063] (-) TimerEvent: {}
+[10.781498] (-) TimerEvent: {}
+[10.853654] (ugv_sdk) StdoutLine: {'line': b'[ 25%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/mobile_robot/ranger_robot.cpp.o\x1b[0m\n'}
+[10.871988] (scout_msgs) StdoutLine: {'line': b'[ 54%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/scout_msgs/msg/detail/scout_actuator_state__type_support.c.o\x1b[0m\n'}
+[10.881600] (-) TimerEvent: {}
+[10.951762] (scout_msgs) StdoutLine: {'line': b'[ 56%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/scout_msgs/msg/detail/scout_light_cmd__type_support.c.o\x1b[0m\n'}
+[10.981709] (-) TimerEvent: {}
+[11.025105] (scout_msgs) StdoutLine: {'line': b'[ 57%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/scout_msgs/msg/detail/scout_light_state__type_support.c.o\x1b[0m\n'}
+[11.066440] (ugv_sdk) StdoutLine: {'line': b'[ 28%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/mobile_robot/titan_robot.cpp.o\x1b[0m\n'}
+[11.072274] (scout_msgs) StdoutLine: {'line': b'[ 59%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/scout_msgs/msg/detail/scout_rc_state__type_support.c.o\x1b[0m\n'}
+[11.081919] (-) TimerEvent: {}
+[11.149279] (scout_msgs) StdoutLine: {'line': b'[ 62%] \x1b[32m\x1b[1mLinking CXX shared library libscout_msgs__rosidl_typesupport_fastrtps_c.so\x1b[0m\n'}
+[11.150057] (scout_msgs) StdoutLine: {'line': b'[ 62%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/scout_msgs/msg/detail/scout_status__type_support.c.o\x1b[0m\n'}
+[11.181981] (-) TimerEvent: {}
+[11.252659] (scout_msgs) StdoutLine: {'line': b'[ 64%] \x1b[32m\x1b[1mLinking C shared library libscout_msgs__rosidl_typesupport_introspection_c.so\x1b[0m\n'}
+[11.262314] (scout_msgs) StdoutLine: {'line': b'[ 65%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/scout_msgs/msg/detail/dds_fastrtps/scout_status__type_support.cpp.o\x1b[0m\n'}
+[11.282846] (-) TimerEvent: {}
+[11.378056] (scout_msgs) StdoutLine: {'line': b'[ 67%] \x1b[32m\x1b[1mLinking CXX shared library libscout_msgs__rosidl_typesupport_introspection_cpp.so\x1b[0m\n'}
+[11.384438] (scout_msgs) StdoutLine: {'line': b'[ 67%] Built target scout_msgs__rosidl_typesupport_introspection_c\n'}
+[11.384684] (-) TimerEvent: {}
+[11.392272] (scout_msgs) StdoutLine: {'line': b'[ 67%] Built target scout_msgs__rosidl_typesupport_fastrtps_c\n'}
+[11.419144] (scout_msgs) StdoutLine: {'line': b'[ 68%] \x1b[34m\x1b[1mGenerating C type support dispatch for ROS interfaces\x1b[0m\n'}
+[11.484780] (-) TimerEvent: {}
+[11.586009] (-) TimerEvent: {}
+[11.629957] (scout_msgs) StdoutLine: {'line': b'[ 68%] Built target scout_msgs__rosidl_typesupport_introspection_cpp\n'}
+[11.692464] (-) TimerEvent: {}
+[11.793107] (-) TimerEvent: {}
+[11.893488] (-) TimerEvent: {}
+[11.993989] (-) TimerEvent: {}
+[12.094532] (-) TimerEvent: {}
+[12.153238] (scout_msgs) StdoutLine: {'line': b'[ 70%] \x1b[32m\x1b[1mLinking CXX shared library libscout_msgs__rosidl_typesupport_fastrtps_cpp.so\x1b[0m\n'}
+[12.194885] (-) TimerEvent: {}
+[12.260412] (scout_msgs) StdoutLine: {'line': b'[ 71%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/scout_msgs/msg/scout_actuator_state__type_support.cpp.o\x1b[0m\n'}
+[12.270168] (scout_msgs) StdoutLine: {'line': b'[ 73%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/scout_msgs/msg/scout_light_cmd__type_support.cpp.o\x1b[0m\n'}
+[12.271211] (scout_msgs) StdoutLine: {'line': b'[ 75%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/scout_msgs/msg/scout_light_state__type_support.cpp.o\x1b[0m\n'}
+[12.295026] (-) TimerEvent: {}
+[12.347930] (scout_msgs) StdoutLine: {'line': b'[ 76%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/scout_msgs/msg/scout_rc_state__type_support.cpp.o\x1b[0m\n'}
+[12.362679] (scout_msgs) StdoutLine: {'line': b'[ 78%] \x1b[32mBuilding CXX object CMakeFiles/scout_msgs__rosidl_typesupport_c.dir/rosidl_typesupport_c/scout_msgs/msg/scout_status__type_support.cpp.o\x1b[0m\n'}
+[12.394997] (scout_msgs) StdoutLine: {'line': b'[ 78%] Built target scout_msgs__rosidl_typesupport_fastrtps_cpp\n'}
+[12.395170] (-) TimerEvent: {}
+[12.408273] (ugv_sdk) StdoutLine: {'line': b'[ 32%] \x1b[32mBuilding C object CMakeFiles/ugv_sdk.dir/src/protocol_v2/agilex_msg_parser_v2.c.o\x1b[0m\n'}
+[12.449737] (scout_msgs) StdoutLine: {'line': b'[ 79%] \x1b[32m\x1b[1mLinking CXX shared library libscout_msgs__rosidl_typesupport_c.so\x1b[0m\n'}
+[12.500251] (-) TimerEvent: {}
+[12.575016] (scout_msgs) StdoutLine: {'line': b'[ 79%] Built target scout_msgs__rosidl_typesupport_c\n'}
+[12.600374] (-) TimerEvent: {}
+[12.633662] (scout_msgs) StdoutLine: {'line': b'[ 79%] Built target scout_msgs\n'}
+[12.688002] (scout_msgs) StdoutLine: {'line': b'[ 81%] \x1b[34m\x1b[1mGenerating Python code for ROS interfaces\x1b[0m\n'}
+[12.700469] (-) TimerEvent: {}
+[12.776731] (ugv_sdk) StdoutLine: {'line': b'[ 35%] \x1b[32mBuilding CXX object CMakeFiles/ugv_sdk.dir/src/protocol_v2/protocol_v2_parser.cpp.o\x1b[0m\n'}
+[12.800713] (-) TimerEvent: {}
+[12.888608] (ugv_sdk) StdoutLine: {'line': b'[ 39%] \x1b[32mBuilding C object CMakeFiles/ugv_sdk.dir/src/protocol_v1/agilex_msg_parser_v1.c.o\x1b[0m\n'}
+[12.900712] (-) TimerEvent: {}
+[13.001143] (-) TimerEvent: {}
+[13.101668] (-) TimerEvent: {}
+[13.204461] (-) TimerEvent: {}
+[13.305141] (-) TimerEvent: {}
+[13.405462] (-) TimerEvent: {}
+[13.506077] (-) TimerEvent: {}
+[13.607293] (-) TimerEvent: {}
+[13.691345] (ugv_sdk) StdoutLine: {'line': b'[ 42%] \x1b[32m\x1b[1mLinking CXX static library lib/libugv_sdk.a\x1b[0m\n'}
+[13.707426] (-) TimerEvent: {}
+[13.750339] (ugv_sdk) StdoutLine: {'line': b'[ 42%] Built target ugv_sdk\n'}
+[13.788133] (ugv_sdk) StdoutLine: {'line': b'[ 46%] \x1b[32mBuilding CXX object sample/scout_demo/CMakeFiles/demo_scout_robot.dir/scout_robot_demo.cpp.o\x1b[0m\n'}
+[13.791206] (ugv_sdk) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding CXX object sample/tracer_demo/CMakeFiles/demo_tracer_robot.dir/tracer_robot_demo.cpp.o\x1b[0m\n'}
+[13.791414] (ugv_sdk) StdoutLine: {'line': b'[ 53%] \x1b[32mBuilding CXX object sample/ranger_demo/CMakeFiles/demo_ranger_robot.dir/ranger_robot_demo.cpp.o\x1b[0m\n'}
+[13.795465] (ugv_sdk) StdoutLine: {'line': b'[ 57%] \x1b[32mBuilding CXX object sample/scout_demo/CMakeFiles/demo_scout_mini_omni_robot.dir/scout_mini_omni_demo.cpp.o\x1b[0m\n'}
+[13.807935] (-) TimerEvent: {}
+[13.916489] (-) TimerEvent: {}
+[13.945482] (scout_msgs) StdoutLine: {'line': b'[ 81%] Built target scout_msgs__py\n'}
+[14.004545] (scout_msgs) StdoutLine: {'line': b'[ 84%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_py.dir/rosidl_generator_py/scout_msgs/msg/_scout_light_cmd_s.c.o\x1b[0m\n'}
+[14.004819] (scout_msgs) StdoutLine: {'line': b'[ 84%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_py.dir/rosidl_generator_py/scout_msgs/msg/_scout_actuator_state_s.c.o\x1b[0m\n'}
+[14.008205] (scout_msgs) StdoutLine: {'line': b'[ 85%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_py.dir/rosidl_generator_py/scout_msgs/msg/_scout_rc_state_s.c.o\x1b[0m\n'}
+[14.016328] (scout_msgs) StdoutLine: {'line': b'[ 87%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_py.dir/rosidl_generator_py/scout_msgs/msg/_scout_light_state_s.c.o\x1b[0m\n'}
+[14.016549] (-) TimerEvent: {}
+[14.124253] (-) TimerEvent: {}
+[14.224569] (-) TimerEvent: {}
+[14.276328] (scout_msgs) StdoutLine: {'line': b'[ 89%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_generator_py.dir/rosidl_generator_py/scout_msgs/msg/_scout_status_s.c.o\x1b[0m\n'}
+[14.324653] (-) TimerEvent: {}
+[14.425600] (-) TimerEvent: {}
+[14.526070] (-) TimerEvent: {}
+[14.542570] (scout_msgs) StdoutLine: {'line': b'[ 90%] \x1b[32m\x1b[1mLinking C shared library rosidl_generator_py/scout_msgs/libscout_msgs__rosidl_generator_py.so\x1b[0m\n'}
+[14.627635] (-) TimerEvent: {}
+[14.668845] (scout_msgs) StdoutLine: {'line': b'[ 90%] Built target scout_msgs__rosidl_generator_py\n'}
+[14.720469] (scout_msgs) StdoutLine: {'line': b'[ 93%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_typesupport_fastrtps_c__pyext.dir/rosidl_generator_py/scout_msgs/_scout_msgs_s.ep.rosidl_typesupport_fastrtps_c.c.o\x1b[0m\n'}
+[14.724535] (scout_msgs) StdoutLine: {'line': b'[ 93%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_typesupport_introspection_c__pyext.dir/rosidl_generator_py/scout_msgs/_scout_msgs_s.ep.rosidl_typesupport_introspection_c.c.o\x1b[0m\n'}
+[14.727724] (-) TimerEvent: {}
+[14.743140] (scout_msgs) StdoutLine: {'line': b'[ 95%] \x1b[32mBuilding C object CMakeFiles/scout_msgs__rosidl_typesupport_c__pyext.dir/rosidl_generator_py/scout_msgs/_scout_msgs_s.ep.rosidl_typesupport_c.c.o\x1b[0m\n'}
+[14.827825] (-) TimerEvent: {}
+[14.932254] (-) TimerEvent: {}
+[15.010106] (scout_msgs) StdoutLine: {'line': b'[ 96%] \x1b[32m\x1b[1mLinking C shared library rosidl_generator_py/scout_msgs/scout_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so\x1b[0m\n'}
+[15.010493] (scout_msgs) StdoutLine: {'line': b'[ 98%] \x1b[32m\x1b[1mLinking C shared library rosidl_generator_py/scout_msgs/scout_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so\x1b[0m\n'}
+[15.032354] (-) TimerEvent: {}
+[15.083548] (scout_msgs) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking C shared library rosidl_generator_py/scout_msgs/scout_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so\x1b[0m\n'}
+[15.103039] (scout_msgs) StdoutLine: {'line': b'[100%] Built target scout_msgs__rosidl_typesupport_fastrtps_c__pyext\n'}
+[15.115078] (scout_msgs) StdoutLine: {'line': b'[100%] Built target scout_msgs__rosidl_typesupport_introspection_c__pyext\n'}
+[15.132487] (-) TimerEvent: {}
+[15.224848] (scout_msgs) StdoutLine: {'line': b'[100%] Built target scout_msgs__rosidl_typesupport_c__pyext\n'}
+[15.232715] (-) TimerEvent: {}
+[15.272718] (scout_msgs) CommandEnded: {'returncode': 0}
+[15.288361] (scout_msgs) JobProgress: {'identifier': 'scout_msgs', 'progress': 'install'}
+[15.288485] (scout_msgs) Command: {'cmd': ['/usr/bin/cmake', '--install', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_msgs'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/scout_msgs', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_msgs'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble')]), 'shell': False}
+[15.297872] (scout_msgs) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[15.301216] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/ament_index/resource_index/rosidl_interfaces/scout_msgs\n'}
+[15.302129] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs\n'}
+[15.302626] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg\n'}
+[15.302988] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_light_state.h\n'}
+[15.305306] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_actuator_state.h\n'}
+[15.305467] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_rc_state.h\n'}
+[15.305515] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_status.h\n'}
+[15.305553] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_light_cmd.h\n'}
+[15.305592] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail\n'}
+[15.305627] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__struct.h\n'}
+[15.305663] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__type_support.h\n'}
+[15.308260] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__functions.h\n'}
+[15.308481] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__struct.h\n'}
+[15.308533] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__functions.c\n'}
+[15.308581] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__functions.h\n'}
+[15.308620] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__type_support.h\n'}
+[15.308719] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__functions.c\n'}
+[15.308766] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__functions.c\n'}
+[15.308805] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__functions.h\n'}
+[15.308840] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__type_support.h\n'}
+[15.308875] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__type_support.h\n'}
+[15.308931] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__functions.c\n'}
+[15.309015] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__type_support.h\n'}
+[15.309052] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__struct.h\n'}
+[15.309357] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__functions.h\n'}
+[15.309506] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__functions.c\n'}
+[15.309645] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__functions.h\n'}
+[15.309853] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__struct.h\n'}
+[15.310006] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__struct.h\n'}
+[15.310151] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/rosidl_generator_c__visibility_control.h\n'}
+[15.310749] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/environment/library_path.sh\n'}
+[15.317373] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/environment/library_path.dsv\n'}
+[15.318149] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_generator_c.so\n'}
+[15.320104] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_generator_c.so" to ""\n'}
+[15.320311] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs\n'}
+[15.320372] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg\n'}
+[15.320415] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail\n'}
+[15.320460] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__rosidl_typesupport_fastrtps_c.h\n'}
+[15.320542] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__rosidl_typesupport_fastrtps_c.h\n'}
+[15.320597] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__rosidl_typesupport_fastrtps_c.h\n'}
+[15.324401] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__rosidl_typesupport_fastrtps_c.h\n'}
+[15.324473] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__rosidl_typesupport_fastrtps_c.h\n'}
+[15.324521] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/rosidl_typesupport_fastrtps_c__visibility_control.h\n'}
+[15.324570] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_fastrtps_c.so\n'}
+[15.324637] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_fastrtps_c.so" to ""\n'}
+[15.324755] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs\n'}
+[15.324808] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg\n'}
+[15.324858] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_light_state.hpp\n'}
+[15.324907] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail\n'}
+[15.324959] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__struct.hpp\n'}
+[15.325001] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__builder.hpp\n'}
+[15.325043] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__traits.hpp\n'}
+[15.325084] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__struct.hpp\n'}
+[15.325119] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__traits.hpp\n'}
+[15.325152] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__struct.hpp\n'}
+[15.325192] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__builder.hpp\n'}
+[15.325227] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__builder.hpp\n'}
+[15.325260] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__traits.hpp\n'}
+[15.325320] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__traits.hpp\n'}
+[15.325371] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__type_support.hpp\n'}
+[15.325409] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__type_support.hpp\n'}
+[15.325456] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__struct.hpp\n'}
+[15.325504] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__builder.hpp\n'}
+[15.325547] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__type_support.hpp\n'}
+[15.325588] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__type_support.hpp\n'}
+[15.325632] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__type_support.hpp\n'}
+[15.325667] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__builder.hpp\n'}
+[15.325700] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__struct.hpp\n'}
+[15.325784] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__traits.hpp\n'}
+[15.325866] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_actuator_state.hpp\n'}
+[15.325901] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_light_cmd.hpp\n'}
+[15.325963] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_rc_state.hpp\n'}
+[15.326036] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/scout_status.hpp\n'}
+[15.326092] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/rosidl_generator_cpp__visibility_control.hpp\n'}
+[15.326146] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs\n'}
+[15.326182] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg\n'}
+[15.326233] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h\n'}
+[15.326276] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail\n'}
+[15.326310] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[15.326346] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/dds_fastrtps\n'}
+[15.326450] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[15.326523] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[15.326603] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[15.326674] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[15.326817] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_fastrtps_cpp.so\n'}
+[15.333144] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_fastrtps_cpp.so" to ""\n'}
+[15.333342] (-) TimerEvent: {}
+[15.333516] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs\n'}
+[15.333610] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg\n'}
+[15.333670] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/rosidl_typesupport_introspection_c__visibility_control.h\n'}
+[15.333731] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail\n'}
+[15.333785] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__type_support.c\n'}
+[15.333835] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__type_support.c\n'}
+[15.333882] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__rosidl_typesupport_introspection_c.h\n'}
+[15.333933] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__rosidl_typesupport_introspection_c.h\n'}
+[15.333973] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__type_support.c\n'}
+[15.334043] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__type_support.c\n'}
+[15.334085] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__type_support.c\n'}
+[15.334121] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__rosidl_typesupport_introspection_c.h\n'}
+[15.334155] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__rosidl_typesupport_introspection_c.h\n'}
+[15.334197] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__rosidl_typesupport_introspection_c.h\n'}
+[15.334239] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_introspection_c.so\n'}
+[15.334295] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_introspection_c.so" to ""\n'}
+[15.334340] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_c.so\n'}
+[15.334536] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_c.so" to ""\n'}
+[15.334664] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs\n'}
+[15.334723] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg\n'}
+[15.334773] (scout_msgs) StdoutLine: {'line': b'-- Up-to-date: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail\n'}
+[15.334823] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__rosidl_typesupport_introspection_cpp.hpp\n'}
+[15.334897] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__type_support.cpp\n'}
+[15.334948] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__rosidl_typesupport_introspection_cpp.hpp\n'}
+[15.334991] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_state__rosidl_typesupport_introspection_cpp.hpp\n'}
+[15.335049] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__rosidl_typesupport_introspection_cpp.hpp\n'}
+[15.335099] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_rc_state__type_support.cpp\n'}
+[15.335160] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__rosidl_typesupport_introspection_cpp.hpp\n'}
+[15.335228] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_actuator_state__type_support.cpp\n'}
+[15.335294] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_status__type_support.cpp\n'}
+[15.335359] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/include/scout_msgs/scout_msgs/msg/detail/scout_light_cmd__type_support.cpp\n'}
+[15.335526] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_introspection_cpp.so\n'}
+[15.336023] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_introspection_cpp.so" to ""\n'}
+[15.336125] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_cpp.so\n'}
+[15.336350] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_typesupport_cpp.so" to ""\n'}
+[15.336437] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/environment/pythonpath.sh\n'}
+[15.340295] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/environment/pythonpath.dsv\n'}
+[15.340468] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs-0.1.0-py3.10.egg-info\n'}
+[15.340549] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs-0.1.0-py3.10.egg-info/SOURCES.txt\n'}
+[15.340594] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs-0.1.0-py3.10.egg-info/dependency_links.txt\n'}
+[15.340659] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs-0.1.0-py3.10.egg-info/PKG-INFO\n'}
+[15.340710] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs-0.1.0-py3.10.egg-info/top_level.txt\n'}
+[15.340760] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs\n'}
+[15.340802] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/_scout_msgs_s.ep.rosidl_typesupport_c.c\n'}
+[15.340843] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so\n'}
+[15.341013] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so\n'}
+[15.341119] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/__init__.py\n'}
+[15.341313] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg\n'}
+[15.341460] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_light_cmd_s.c\n'}
+[15.341545] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_actuator_state_s.c\n'}
+[15.341622] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_light_state.py\n'}
+[15.344297] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_rc_state_s.c\n'}
+[15.345940] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_actuator_state.py\n'}
+[15.346175] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/__init__.py\n'}
+[15.346232] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_rc_state.py\n'}
+[15.346276] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_light_cmd.py\n'}
+[15.346316] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_status_s.c\n'}
+[15.346355] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_status.py\n'}
+[15.346402] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_light_state_s.c\n'}
+[15.346439] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/_scout_msgs_s.ep.rosidl_typesupport_introspection_c.c\n'}
+[15.346478] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/libscout_msgs__rosidl_generator_py.so\n'}
+[15.346515] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/_scout_msgs_s.ep.rosidl_typesupport_fastrtps_c.c\n'}
+[15.346552] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so\n'}
+[15.436287] (-) TimerEvent: {}
+[15.446228] (scout_msgs) StdoutLine: {'line': b"Listing '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs'...\n"}
+[15.446435] (scout_msgs) StdoutLine: {'line': b"Compiling '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/__init__.py'...\n"}
+[15.446497] (scout_msgs) StdoutLine: {'line': b"Listing '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg'...\n"}
+[15.446550] (scout_msgs) StdoutLine: {'line': b"Compiling '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/__init__.py'...\n"}
+[15.446602] (scout_msgs) StdoutLine: {'line': b"Compiling '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_actuator_state.py'...\n"}
+[15.446648] (scout_msgs) StdoutLine: {'line': b"Compiling '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_light_cmd.py'...\n"}
+[15.446692] (scout_msgs) StdoutLine: {'line': b"Compiling '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_light_state.py'...\n"}
+[15.446734] (scout_msgs) StdoutLine: {'line': b"Compiling '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_rc_state.py'...\n"}
+[15.446787] (scout_msgs) StdoutLine: {'line': b"Compiling '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/msg/_scout_status.py'...\n"}
+[15.462388] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so\n'}
+[15.462795] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so" to ""\n'}
+[15.462989] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so\n'}
+[15.466393] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so" to ""\n'}
+[15.466635] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so\n'}
+[15.466731] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages/scout_msgs/scout_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so" to ""\n'}
+[15.466827] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_generator_py.so\n'}
+[15.466868] (scout_msgs) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib/libscout_msgs__rosidl_generator_py.so" to ""\n'}
+[15.467087] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/ament_index/resource_index/rust_packages/scout_msgs\n'}
+[15.467220] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/rust\n'}
+[15.467444] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/rust/Cargo.toml\n'}
+[15.467538] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/rust/src\n'}
+[15.468864] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/rust/src/msg.rs\n'}
+[15.469092] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/rust/src/msg\n'}
+[15.472785] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/rust/src/msg/rmw.rs\n'}
+[15.475666] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/rust/src/lib.rs\n'}
+[15.475897] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/rust/build.rs\n'}
+[15.475964] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutActuatorState.idl\n'}
+[15.476017] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutLightCmd.idl\n'}
+[15.476090] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutLightState.idl\n'}
+[15.476253] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutRCState.idl\n'}
+[15.476567] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutStatus.idl\n'}
+[15.476824] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutActuatorState.msg\n'}
+[15.477318] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutLightCmd.msg\n'}
+[15.477543] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutLightState.msg\n'}
+[15.477858] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutRCState.msg\n'}
+[15.478390] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/msg/ScoutStatus.msg\n'}
+[15.479478] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/ament_index/resource_index/package_run_dependencies/scout_msgs\n'}
+[15.479748] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/ament_index/resource_index/parent_prefix_path/scout_msgs\n'}
+[15.479799] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/environment/ament_prefix_path.sh\n'}
+[15.479851] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/environment/ament_prefix_path.dsv\n'}
+[15.479905] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/environment/path.sh\n'}
+[15.479942] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/environment/path.dsv\n'}
+[15.480253] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/local_setup.bash\n'}
+[15.485044] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/local_setup.sh\n'}
+[15.486290] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/local_setup.zsh\n'}
+[15.486697] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/local_setup.dsv\n'}
+[15.487289] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/package.dsv\n'}
+[15.488107] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/ament_index/resource_index/packages/scout_msgs\n'}
+[15.492643] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_generator_cExport.cmake\n'}
+[15.493830] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_generator_cExport-noconfig.cmake\n'}
+[15.494984] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_typesupport_fastrtps_cExport.cmake\n'}
+[15.495409] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_typesupport_fastrtps_cExport-noconfig.cmake\n'}
+[15.495735] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_generator_cppExport.cmake\n'}
+[15.496096] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_typesupport_fastrtps_cppExport.cmake\n'}
+[15.496886] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake\n'}
+[15.500124] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgs__rosidl_typesupport_introspection_cExport.cmake\n'}
+[15.501682] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgs__rosidl_typesupport_introspection_cExport-noconfig.cmake\n'}
+[15.502106] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgs__rosidl_typesupport_cExport.cmake\n'}
+[15.502866] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgs__rosidl_typesupport_cExport-noconfig.cmake\n'}
+[15.503590] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgs__rosidl_typesupport_introspection_cppExport.cmake\n'}
+[15.504616] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgs__rosidl_typesupport_introspection_cppExport-noconfig.cmake\n'}
+[15.505618] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgs__rosidl_typesupport_cppExport.cmake\n'}
+[15.509950] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgs__rosidl_typesupport_cppExport-noconfig.cmake\n'}
+[15.510723] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_generator_pyExport.cmake\n'}
+[15.511250] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/export_scout_msgs__rosidl_generator_pyExport-noconfig.cmake\n'}
+[15.513081] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/rosidl_cmake-extras.cmake\n'}
+[15.514285] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/ament_cmake_export_dependencies-extras.cmake\n'}
+[15.517071] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/ament_cmake_export_include_directories-extras.cmake\n'}
+[15.523544] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/ament_cmake_export_libraries-extras.cmake\n'}
+[15.523825] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/ament_cmake_export_targets-extras.cmake\n'}
+[15.524427] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake\n'}
+[15.525246] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake\n'}
+[15.529740] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgsConfig.cmake\n'}
+[15.530413] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake/scout_msgsConfig-version.cmake\n'}
+[15.530983] (scout_msgs) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/package.xml\n'}
+[15.536682] (-) TimerEvent: {}
+[15.547575] (scout_msgs) CommandEnded: {'returncode': 0}
+[15.591200] (scout_msgs) JobEnded: {'identifier': 'scout_msgs', 'rc': 0}
+[15.636763] (-) TimerEvent: {}
+[15.737250] (-) TimerEvent: {}
+[15.787949] (ugv_sdk) StdoutLine: {'line': b'[ 60%] \x1b[32m\x1b[1mLinking CXX executable ../../bin/demo_scout_mini_omni_robot\x1b[0m\n'}
+[15.837405] (-) TimerEvent: {}
+[15.937943] (-) TimerEvent: {}
+[16.039144] (-) TimerEvent: {}
+[16.045445] (ugv_sdk) StdoutLine: {'line': b'[ 60%] Built target demo_scout_mini_omni_robot\n'}
+[16.095242] (ugv_sdk) StdoutLine: {'line': b'[ 64%] \x1b[32mBuilding CXX object sample/bunker_demo/CMakeFiles/demo_bunker_robot.dir/bunker_robot_demo.cpp.o\x1b[0m\n'}
+[16.139270] (-) TimerEvent: {}
+[16.239749] (-) TimerEvent: {}
+[16.332391] (ugv_sdk) StdoutLine: {'line': b'[ 67%] \x1b[32m\x1b[1mLinking CXX executable ../../bin/demo_scout_robot\x1b[0m\n'}
+[16.344276] (-) TimerEvent: {}
+[16.445046] (-) TimerEvent: {}
+[16.545826] (-) TimerEvent: {}
+[16.591788] (ugv_sdk) StdoutLine: {'line': b'[ 71%] \x1b[32m\x1b[1mLinking CXX executable ../../bin/demo_tracer_robot\x1b[0m\n'}
+[16.599483] (ugv_sdk) StdoutLine: {'line': b'[ 71%] Built target demo_scout_robot\n'}
+[16.646583] (-) TimerEvent: {}
+[16.684666] (ugv_sdk) StdoutLine: {'line': b'[ 75%] \x1b[32mBuilding CXX object sample/hunter_demo/CMakeFiles/demo_hunter_robot.dir/hunter_robot_demo.cpp.o\x1b[0m\n'}
+[16.746602] (-) TimerEvent: {}
+[16.748973] (ugv_sdk) StdoutLine: {'line': b'[ 75%] Built target demo_tracer_robot\n'}
+[16.799626] (ugv_sdk) StdoutLine: {'line': b'[ 78%] \x1b[32m\x1b[1mLinking CXX executable ../../bin/demo_ranger_robot\x1b[0m\n'}
+[16.805006] (ugv_sdk) StdoutLine: {'line': b'[ 82%] \x1b[32mBuilding CXX object sample/utils_demo/CMakeFiles/demo_protocol_detector.dir/demo_protocol_detector.cpp.o\x1b[0m\n'}
+[16.826776] (ugv_sdk) StdoutLine: {'line': b'[ 85%] \x1b[32m\x1b[1mLinking CXX executable ../../bin/demo_bunker_robot\x1b[0m\n'}
+[16.846697] (-) TimerEvent: {}
+[16.947205] (-) TimerEvent: {}
+[16.996695] (ugv_sdk) StdoutLine: {'line': b'[ 85%] Built target demo_bunker_robot\n'}
+[17.027025] (ugv_sdk) StdoutLine: {'line': b'[ 85%] Built target demo_ranger_robot\n'}
+[17.030972] (ugv_sdk) StdoutLine: {'line': b'[ 89%] \x1b[32mBuilding CXX object sample/utils_demo/CMakeFiles/demo_robot_version.dir/demo_robot_version.cpp.o\x1b[0m\n'}
+[17.051001] (-) TimerEvent: {}
+[17.151343] (-) TimerEvent: {}
+[17.251737] (-) TimerEvent: {}
+[17.352197] (-) TimerEvent: {}
+[17.452927] (-) TimerEvent: {}
+[17.555814] (-) TimerEvent: {}
+[17.656387] (-) TimerEvent: {}
+[17.756772] (-) TimerEvent: {}
+[17.860584] (-) TimerEvent: {}
+[17.963676] (-) TimerEvent: {}
+[18.064013] (-) TimerEvent: {}
+[18.119135] (ugv_sdk) StdoutLine: {'line': b'[ 92%] \x1b[32m\x1b[1mLinking CXX executable ../../bin/demo_hunter_robot\x1b[0m\n'}
+[18.164264] (-) TimerEvent: {}
+[18.216785] (ugv_sdk) StdoutLine: {'line': b'[ 96%] \x1b[32m\x1b[1mLinking CXX executable ../../bin/demo_protocol_detector\x1b[0m\n'}
+[18.226533] (ugv_sdk) StdoutLine: {'line': b'[ 96%] Built target demo_hunter_robot\n'}
+[18.264369] (-) TimerEvent: {}
+[18.312566] (ugv_sdk) StdoutLine: {'line': b'[ 96%] Built target demo_protocol_detector\n'}
+[18.364476] (-) TimerEvent: {}
+[18.392736] (ugv_sdk) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking CXX executable ../../bin/demo_robot_version\x1b[0m\n'}
+[18.464816] (-) TimerEvent: {}
+[18.566329] (-) TimerEvent: {}
+[18.610921] (ugv_sdk) StdoutLine: {'line': b'[100%] Built target demo_robot_version\n'}
+[18.625477] (ugv_sdk) CommandEnded: {'returncode': 0}
+[18.627039] (ugv_sdk) JobProgress: {'identifier': 'ugv_sdk', 'progress': 'install'}
+[18.627844] (ugv_sdk) Command: {'cmd': ['/usr/bin/cmake', '--install', '/workspaces/ROS2_For_SCOUT_MINI/build/ugv_sdk'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/ugv_sdk', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/ugv_sdk'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1')]), 'shell': False}
+[18.636888] (ugv_sdk) StdoutLine: {'line': b'-- Install configuration: "Release"\n'}
+[18.637177] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/libugv_sdk.a\n'}
+[18.639566] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk\n'}
+[18.640991] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details\n'}
+[18.641725] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/protocol_v1\n'}
+[18.642321] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/protocol_v1/robot_limits.hpp\n'}
+[18.642474] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/protocol_v1/protocol_v1_parser.hpp\n'}
+[18.642594] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/protocol_v1/agilex_msg_parser_v1.h\n'}
+[18.642715] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/async_port\n'}
+[18.642791] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/async_port/ring_buffer.hpp\n'}
+[18.642949] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/async_port/async_can.hpp\n'}
+[18.642996] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/async_port/async_serial.hpp\n'}
+[18.643056] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/robot_base\n'}
+[18.643094] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/robot_base/scout_base.hpp\n'}
+[18.643132] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/robot_base/ranger_base.hpp\n'}
+[18.643167] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/robot_base/titan_base.hpp\n'}
+[18.643201] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/robot_base/hunter_base.hpp\n'}
+[18.643236] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/robot_base/tracer_base.hpp\n'}
+[18.643363] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/robot_base/agilex_base.hpp\n'}
+[18.643533] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/robot_base/bunker_base.hpp\n'}
+[18.643643] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface\n'}
+[18.643819] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/titan_interface.hpp\n'}
+[18.643885] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/scout_interface.hpp\n'}
+[18.643924] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/ranger_interface.hpp\n'}
+[18.643959] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/robot_common_interface.hpp\n'}
+[18.643996] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/hunter_interface.hpp\n'}
+[18.644029] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/agilex_types.h\n'}
+[18.644097] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/bunker_interface.hpp\n'}
+[18.644136] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/tracer_interface.hpp\n'}
+[18.644228] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/interface/agilex_message.h\n'}
+[18.644273] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/parser_base.hpp\n'}
+[18.644308] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/protocol_v2\n'}
+[18.644429] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/details/protocol_v2/protocol_v2_parser.hpp\n'}
+[18.644545] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/utilities\n'}
+[18.644669] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/utilities/protocol_detector.hpp\n'}
+[18.644797] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/mobile_robot\n'}
+[18.644898] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/mobile_robot/titan_robot.hpp\n'}
+[18.645011] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/mobile_robot/tracer_robot.hpp\n'}
+[18.645119] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/mobile_robot/hunter_robot.hpp\n'}
+[18.645179] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/mobile_robot/ranger_robot.hpp\n'}
+[18.645248] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/mobile_robot/scout_robot.hpp\n'}
+[18.645346] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/include/ugv_sdk/mobile_robot/bunker_robot.hpp\n'}
+[18.645691] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/cmake/ugv_sdk/ugv_sdkTargets.cmake\n'}
+[18.646533] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/cmake/ugv_sdk/ugv_sdkTargets-release.cmake\n'}
+[18.647150] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/cmake/ugv_sdk/ugv_sdkConfig.cmake\n'}
+[18.647650] (ugv_sdk) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/cmake/ugv_sdk/ugv_sdkConfigVersion.cmake\n'}
+[18.652153] (ugv_sdk) CommandEnded: {'returncode': 0}
+[18.666663] (ugv_sdk) JobEnded: {'identifier': 'ugv_sdk', 'rc': 0}
+[18.667823] (-) TimerEvent: {}
+[18.667954] (scout_base) JobStarted: {'identifier': 'scout_base'}
+[18.679935] (scout_base) JobProgress: {'identifier': 'scout_base', 'progress': 'cmake'}
+[18.682378] (scout_base) Command: {'cmd': ['/usr/bin/cmake', '/workspaces/ROS2_For_SCOUT_MINI/src/scout_ros2/scout_base', '-DCMAKE_INSTALL_PREFIX=/workspaces/ROS2_For_SCOUT_MINI/install/scout_base'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('ROS_PACKAGE_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('PKG_CONFIG_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs')]), 'shell': False}
+[18.768387] (-) TimerEvent: {}
+[18.869346] (-) TimerEvent: {}
+[18.875889] (scout_base) StdoutLine: {'line': b'-- The C compiler identification is GNU 11.4.0\n'}
+[18.935024] (scout_base) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 11.4.0\n'}
+[18.943184] (scout_base) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[18.969394] (-) TimerEvent: {}
+[19.018092] (scout_base) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[19.023879] (scout_base) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[19.024293] (scout_base) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[19.025014] (scout_base) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[19.029045] (scout_base) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[19.069563] (-) TimerEvent: {}
+[19.116867] (scout_base) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[19.128784] (scout_base) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[19.131337] (scout_base) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[19.131758] (scout_base) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[19.151269] (scout_base) StdoutLine: {'line': b'-- Found ament_cmake: 1.3.14 (/opt/ros/humble/share/ament_cmake/cmake)\n'}
+[19.169801] (-) TimerEvent: {}
+[19.270843] (-) TimerEvent: {}
+[19.371932] (-) TimerEvent: {}
+[19.407383] (scout_base) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter \n'}
+[19.472080] (-) TimerEvent: {}
+[19.521736] (scout_base) StdoutLine: {'line': b'-- Found rclcpp: 16.0.19 (/opt/ros/humble/share/rclcpp/cmake)\n'}
+[19.572299] (-) TimerEvent: {}
+[19.604588] (scout_base) StdoutLine: {'line': b'-- Found rosidl_generator_c: 3.1.8 (/opt/ros/humble/share/rosidl_generator_c/cmake)\n'}
+[19.614150] (scout_base) StdoutLine: {'line': b'-- Found rosidl_adapter: 3.1.8 (/opt/ros/humble/share/rosidl_adapter/cmake)\n'}
+[19.627119] (scout_base) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 3.1.8 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)\n'}
+[19.651098] (scout_base) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[19.672423] (-) TimerEvent: {}
+[19.673990] (scout_base) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[19.754186] (scout_base) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)\n'}
+[19.759364] (scout_base) StdoutLine: {'line': b'-- Found rmw_fastrtps_cpp: 6.2.10 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)\n'}
+[19.772543] (-) TimerEvent: {}
+[19.872846] (-) TimerEvent: {}
+[19.901803] (scout_base) StdoutLine: {'line': b'-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  \n'}
+[19.933130] (scout_base) StdoutLine: {'line': b'-- Found FastRTPS: /opt/ros/humble/include  \n'}
+[19.973080] (-) TimerEvent: {}
+[19.979928] (scout_base) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_fastrtps_cpp' as default\n"}
+[20.002627] (scout_base) StdoutLine: {'line': b'-- Looking for pthread.h\n'}
+[20.073303] (-) TimerEvent: {}
+[20.083063] (scout_base) StdoutLine: {'line': b'-- Looking for pthread.h - found\n'}
+[20.083565] (scout_base) StdoutLine: {'line': b'-- Performing Test CMAKE_HAVE_LIBC_PTHREAD\n'}
+[20.173515] (-) TimerEvent: {}
+[20.185731] (scout_base) StdoutLine: {'line': b'-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success\n'}
+[20.186730] (scout_base) StdoutLine: {'line': b'-- Found Threads: TRUE  \n'}
+[20.273856] (-) TimerEvent: {}
+[20.298086] (scout_base) StdoutLine: {'line': b'-- Found geometry_msgs: 4.9.1 (/opt/ros/humble/share/geometry_msgs/cmake)\n'}
+[20.317503] (scout_base) StdoutLine: {'line': b'-- Found nav_msgs: 4.9.1 (/opt/ros/humble/share/nav_msgs/cmake)\n'}
+[20.341458] (scout_base) StdoutLine: {'line': b'-- Found sensor_msgs: 4.9.1 (/opt/ros/humble/share/sensor_msgs/cmake)\n'}
+[20.368774] (scout_base) StdoutLine: {'line': b'-- Found tf2: 0.25.20 (/opt/ros/humble/share/tf2/cmake)\n'}
+[20.373958] (-) TimerEvent: {}
+[20.385435] (scout_base) StdoutLine: {'line': b'-- Found tf2_ros: 0.25.20 (/opt/ros/humble/share/tf2_ros/cmake)\n'}
+[20.474069] (-) TimerEvent: {}
+[20.504555] (scout_base) StdoutLine: {'line': b'-- Found tf2_geometry_msgs: 0.25.20 (/opt/ros/humble/share/tf2_geometry_msgs/cmake)\n'}
+[20.528814] (scout_base) StdoutLine: {'line': b'-- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)\n'}
+[20.530973] (scout_base) StdoutLine: {'line': b'-- Found Eigen3: TRUE (found version "3.4.0") \n'}
+[20.531150] (scout_base) StdoutLine: {'line': b'-- Ensuring Eigen3 include directory is part of orocos-kdl CMake target\n'}
+[20.533845] (scout_base) StdoutLine: {'line': b'-- Found scout_msgs: 0.1.0 (/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/share/scout_msgs/cmake)\n'}
+[20.553817] (scout_base) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.12.15 (/opt/ros/humble/share/ament_lint_auto/cmake)\n'}
+[20.574247] (-) TimerEvent: {}
+[20.645179] (scout_base) StdoutLine: {'line': b"-- Added test 'copyright' to check source files copyright and LICENSE\n"}
+[20.646659] (scout_base) StdoutLine: {'line': b"-- Added test 'cppcheck' to perform static code analysis on C / C++ code\n"}
+[20.646884] (scout_base) StdoutLine: {'line': b'-- Configured cppcheck include dirs: /workspaces/ROS2_For_SCOUT_MINI/src/scout_ros2/scout_base/include\n'}
+[20.646978] (scout_base) StdoutLine: {'line': b'-- Configured cppcheck exclude dirs and/or files: \n'}
+[20.647929] (scout_base) StdoutLine: {'line': b"-- Added test 'cpplint' to check C / C++ code against the Google style\n"}
+[20.648033] (scout_base) StdoutLine: {'line': b'-- Configured cpplint exclude dirs and/or files: \n'}
+[20.648817] (scout_base) StdoutLine: {'line': b"-- Added test 'flake8' to check Python code syntax and style conventions\n"}
+[20.649663] (scout_base) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[20.650694] (scout_base) StdoutLine: {'line': b"-- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257\n"}
+[20.651978] (scout_base) StdoutLine: {'line': b"-- Added test 'uncrustify' to check C / C++ code style\n"}
+[20.652093] (scout_base) StdoutLine: {'line': b'-- Configured uncrustify additional arguments: \n'}
+[20.652855] (scout_base) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[20.654386] (scout_base) StdoutLine: {'line': b'-- Configuring done\n'}
+[20.670927] (scout_base) StdoutLine: {'line': b'-- Generating done\n'}
+[20.674334] (-) TimerEvent: {}
+[20.676224] (scout_base) StdoutLine: {'line': b'-- Build files have been written to: /workspaces/ROS2_For_SCOUT_MINI/build/scout_base\n'}
+[20.686630] (scout_base) CommandEnded: {'returncode': 0}
+[20.687263] (scout_base) JobProgress: {'identifier': 'scout_base', 'progress': 'build'}
+[20.688261] (scout_base) Command: {'cmd': ['/usr/bin/cmake', '--build', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base', '--', '-j4', '-l4'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('ROS_PACKAGE_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('PKG_CONFIG_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs')]), 'shell': False}
+[20.739637] (scout_base) StdoutLine: {'line': b'[ 33%] \x1b[32mBuilding CXX object CMakeFiles/scout_base_node.dir/src/scout_base_ros.cpp.o\x1b[0m\n'}
+[20.739826] (scout_base) StdoutLine: {'line': b'[ 66%] \x1b[32mBuilding CXX object CMakeFiles/scout_base_node.dir/src/scout_base_node.cpp.o\x1b[0m\n'}
+[20.774537] (-) TimerEvent: {}
+[20.874955] (-) TimerEvent: {}
+[20.975602] (-) TimerEvent: {}
+[21.075977] (-) TimerEvent: {}
+[21.176746] (-) TimerEvent: {}
+[21.277630] (-) TimerEvent: {}
+[21.378029] (-) TimerEvent: {}
+[21.478577] (-) TimerEvent: {}
+[21.579731] (-) TimerEvent: {}
+[21.682626] (-) TimerEvent: {}
+[21.784417] (-) TimerEvent: {}
+[21.885129] (-) TimerEvent: {}
+[21.985782] (-) TimerEvent: {}
+[22.086341] (-) TimerEvent: {}
+[22.186807] (-) TimerEvent: {}
+[22.287531] (-) TimerEvent: {}
+[22.391372] (-) TimerEvent: {}
+[22.492940] (-) TimerEvent: {}
+[22.593663] (-) TimerEvent: {}
+[22.694080] (-) TimerEvent: {}
+[22.794698] (-) TimerEvent: {}
+[22.895210] (-) TimerEvent: {}
+[22.996463] (-) TimerEvent: {}
+[23.097549] (-) TimerEvent: {}
+[23.200259] (-) TimerEvent: {}
+[23.300844] (-) TimerEvent: {}
+[23.401349] (-) TimerEvent: {}
+[23.502088] (-) TimerEvent: {}
+[23.604579] (-) TimerEvent: {}
+[23.707532] (-) TimerEvent: {}
+[23.808306] (-) TimerEvent: {}
+[23.909049] (-) TimerEvent: {}
+[24.009627] (-) TimerEvent: {}
+[24.111516] (-) TimerEvent: {}
+[24.218540] (-) TimerEvent: {}
+[24.322701] (-) TimerEvent: {}
+[24.423185] (-) TimerEvent: {}
+[24.523710] (-) TimerEvent: {}
+[24.624699] (-) TimerEvent: {}
+[24.725515] (-) TimerEvent: {}
+[24.826921] (-) TimerEvent: {}
+[24.928468] (-) TimerEvent: {}
+[25.030941] (-) TimerEvent: {}
+[25.136266] (-) TimerEvent: {}
+[25.237719] (-) TimerEvent: {}
+[25.338191] (-) TimerEvent: {}
+[25.439754] (-) TimerEvent: {}
+[25.541164] (-) TimerEvent: {}
+[25.643199] (-) TimerEvent: {}
+[25.744743] (-) TimerEvent: {}
+[25.845793] (-) TimerEvent: {}
+[25.948051] (-) TimerEvent: {}
+[26.049268] (-) TimerEvent: {}
+[26.150438] (-) TimerEvent: {}
+[26.251626] (-) TimerEvent: {}
+[26.352349] (-) TimerEvent: {}
+[26.453606] (-) TimerEvent: {}
+[26.555307] (-) TimerEvent: {}
+[26.656061] (-) TimerEvent: {}
+[26.756909] (-) TimerEvent: {}
+[26.858220] (-) TimerEvent: {}
+[26.959347] (-) TimerEvent: {}
+[27.060043] (-) TimerEvent: {}
+[27.160889] (-) TimerEvent: {}
+[27.263149] (-) TimerEvent: {}
+[27.363591] (-) TimerEvent: {}
+[27.463986] (-) TimerEvent: {}
+[27.564378] (-) TimerEvent: {}
+[27.665551] (-) TimerEvent: {}
+[27.766917] (-) TimerEvent: {}
+[27.867323] (-) TimerEvent: {}
+[27.967770] (-) TimerEvent: {}
+[28.068394] (-) TimerEvent: {}
+[28.169064] (-) TimerEvent: {}
+[28.269769] (-) TimerEvent: {}
+[28.370103] (-) TimerEvent: {}
+[28.470460] (-) TimerEvent: {}
+[28.570939] (-) TimerEvent: {}
+[28.671283] (-) TimerEvent: {}
+[28.772281] (-) TimerEvent: {}
+[28.874044] (-) TimerEvent: {}
+[28.974613] (-) TimerEvent: {}
+[29.075355] (-) TimerEvent: {}
+[29.175953] (-) TimerEvent: {}
+[29.276549] (-) TimerEvent: {}
+[29.376906] (-) TimerEvent: {}
+[29.477299] (-) TimerEvent: {}
+[29.577616] (-) TimerEvent: {}
+[29.678271] (-) TimerEvent: {}
+[29.778816] (-) TimerEvent: {}
+[29.879177] (-) TimerEvent: {}
+[29.979512] (-) TimerEvent: {}
+[30.079809] (-) TimerEvent: {}
+[30.180344] (-) TimerEvent: {}
+[30.281106] (-) TimerEvent: {}
+[30.382259] (-) TimerEvent: {}
+[30.484576] (-) TimerEvent: {}
+[30.585715] (-) TimerEvent: {}
+[30.686374] (-) TimerEvent: {}
+[30.786754] (-) TimerEvent: {}
+[30.887303] (-) TimerEvent: {}
+[30.987814] (-) TimerEvent: {}
+[31.088280] (-) TimerEvent: {}
+[31.189062] (-) TimerEvent: {}
+[31.289743] (-) TimerEvent: {}
+[31.390160] (-) TimerEvent: {}
+[31.490571] (-) TimerEvent: {}
+[31.591234] (-) TimerEvent: {}
+[31.692037] (-) TimerEvent: {}
+[31.793197] (-) TimerEvent: {}
+[31.893598] (-) TimerEvent: {}
+[31.994528] (-) TimerEvent: {}
+[32.096842] (-) TimerEvent: {}
+[32.198935] (-) TimerEvent: {}
+[32.299435] (-) TimerEvent: {}
+[32.400288] (-) TimerEvent: {}
+[32.500902] (-) TimerEvent: {}
+[32.601342] (-) TimerEvent: {}
+[32.702027] (-) TimerEvent: {}
+[32.802395] (-) TimerEvent: {}
+[32.902787] (-) TimerEvent: {}
+[33.003516] (-) TimerEvent: {}
+[33.104788] (-) TimerEvent: {}
+[33.205248] (-) TimerEvent: {}
+[33.305590] (-) TimerEvent: {}
+[33.406035] (-) TimerEvent: {}
+[33.507073] (-) TimerEvent: {}
+[33.608107] (-) TimerEvent: {}
+[33.708484] (-) TimerEvent: {}
+[33.809077] (-) TimerEvent: {}
+[33.909548] (-) TimerEvent: {}
+[34.010062] (-) TimerEvent: {}
+[34.110809] (-) TimerEvent: {}
+[34.211924] (-) TimerEvent: {}
+[34.312351] (-) TimerEvent: {}
+[34.413533] (-) TimerEvent: {}
+[34.516670] (-) TimerEvent: {}
+[34.617855] (-) TimerEvent: {}
+[34.719614] (-) TimerEvent: {}
+[34.822107] (-) TimerEvent: {}
+[34.922738] (-) TimerEvent: {}
+[35.023521] (-) TimerEvent: {}
+[35.124906] (-) TimerEvent: {}
+[35.227661] (-) TimerEvent: {}
+[35.328276] (-) TimerEvent: {}
+[35.428750] (-) TimerEvent: {}
+[35.529147] (-) TimerEvent: {}
+[35.629679] (-) TimerEvent: {}
+[35.730517] (-) TimerEvent: {}
+[35.831254] (-) TimerEvent: {}
+[35.931962] (-) TimerEvent: {}
+[36.032360] (-) TimerEvent: {}
+[36.132779] (-) TimerEvent: {}
+[36.233233] (-) TimerEvent: {}
+[36.333700] (-) TimerEvent: {}
+[36.434046] (-) TimerEvent: {}
+[36.534430] (-) TimerEvent: {}
+[36.634772] (-) TimerEvent: {}
+[36.735095] (-) TimerEvent: {}
+[36.835415] (-) TimerEvent: {}
+[36.935791] (-) TimerEvent: {}
+[37.036115] (-) TimerEvent: {}
+[37.136475] (-) TimerEvent: {}
+[37.236840] (-) TimerEvent: {}
+[37.337204] (-) TimerEvent: {}
+[37.437622] (-) TimerEvent: {}
+[37.538003] (-) TimerEvent: {}
+[37.638333] (-) TimerEvent: {}
+[37.738709] (-) TimerEvent: {}
+[37.839065] (-) TimerEvent: {}
+[37.939389] (-) TimerEvent: {}
+[38.039700] (-) TimerEvent: {}
+[38.140029] (-) TimerEvent: {}
+[38.240386] (-) TimerEvent: {}
+[38.340723] (-) TimerEvent: {}
+[38.441059] (-) TimerEvent: {}
+[38.541431] (-) TimerEvent: {}
+[38.641904] (-) TimerEvent: {}
+[38.742401] (-) TimerEvent: {}
+[38.842829] (-) TimerEvent: {}
+[38.943208] (-) TimerEvent: {}
+[39.043584] (-) TimerEvent: {}
+[39.144024] (-) TimerEvent: {}
+[39.244475] (-) TimerEvent: {}
+[39.345552] (-) TimerEvent: {}
+[39.446370] (-) TimerEvent: {}
+[39.470325] (scout_base) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking CXX executable scout_base_node\x1b[0m\n'}
+[39.546562] (-) TimerEvent: {}
+[39.647917] (-) TimerEvent: {}
+[39.748583] (-) TimerEvent: {}
+[39.848944] (-) TimerEvent: {}
+[39.949340] (-) TimerEvent: {}
+[40.049761] (-) TimerEvent: {}
+[40.150167] (-) TimerEvent: {}
+[40.250505] (-) TimerEvent: {}
+[40.312734] (scout_base) StdoutLine: {'line': b'[100%] Built target scout_base_node\n'}
+[40.323733] (scout_base) CommandEnded: {'returncode': 0}
+[40.324952] (scout_base) JobProgress: {'identifier': 'scout_base', 'progress': 'install'}
+[40.325443] (scout_base) Command: {'cmd': ['/usr/bin/cmake', '--install', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base'], 'cwd': '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base', 'env': OrderedDict([('HOSTNAME', 'docker-desktop'), ('GIT_ASKPASS', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass.sh'), ('ROS_PACKAGE_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/share'), ('SHLVL', '2'), ('LD_LIBRARY_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/lib:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib'), ('BROWSER', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/helpers/browser.sh'), ('HOME', '/home/ros'), ('OLDPWD', '/workspaces/ROS2_For_SCOUT_MINI/src'), ('TERM_PROGRAM_VERSION', '1.122.0'), ('VSCODE_IPC_HOOK_CLI', '/tmp/vscode-ipc-700dfb7f-9438-4b87-9f2c-229d73501eb0.sock'), ('ROS_PYTHON_VERSION', '3'), ('VSCODE_GIT_ASKPASS_MAIN', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/extensions/git/dist/askpass-main.js'), ('VSCODE_GIT_ASKPASS_NODE', '/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/node'), ('VSCODE_PYTHON_AUTOACTIVATE_GUARD', '1'), ('COLORTERM', 'truecolor'), ('REMOTE_CONTAINERS', 'true'), ('_colcon_cd_root', '/opt/ros/humble/'), ('WAYLAND_DISPLAY', 'vscode-wayland-59a6f033-2010-41e7-b8a3-e4dad3c13b17.sock'), ('ROS_DISTRO', 'humble'), ('REMOTE_CONTAINERS_IPC', '/tmp/vscode-remote-containers-ipc-828a1738-788b-4771-b485-9923b74d979c.sock'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('CLAUDE_CODE_SSE_PORT', '15234'), ('PKG_CONFIG_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/x86_64-linux-gnu/pkgconfig:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk/lib/pkgconfig'), ('TERM', 'xterm-256color'), ('ROS_LOCALHOST_ONLY', '0'), ('QT_X11_NO_MITSHM', '1'), ('PATH', '/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/debugCommand:/home/ros/.vscode-server/data/User/globalStorage/github.copilot-chat/copilotCli:/vscode/vscode-server/bin/linux-x64/6a49527b96e326fe62fbdb56f60e16877c9aa724/bin/remote-cli:/opt/ros/humble/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'), ('XDG_RUNTIME_DIR', '/tmp/user/1000'), ('REMOTE_CONTAINERS_SOCKETS', '["/home/ros/.gnupg/S.gpg-agent"]'), ('DISPLAY', ':0'), ('LANG', 'C.UTF-8'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('VSCODE_GIT_IPC_HANDLE', '/tmp/user/1000/vscode-git-e2277dba5b.sock'), ('TERM_PROGRAM', 'vscode'), ('ROS_DOMAIN_ID', '0'), ('AMENT_PREFIX_PATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs:/opt/ros/humble'), ('SHELL', '/bin/bash'), ('VSCODE_GIT_ASKPASS_EXTRA_ARGS', ''), ('PWD', '/workspaces/ROS2_For_SCOUT_MINI/build/scout_base'), ('LC_ALL', 'C.UTF-8'), ('COPILOT_DEBUG_NONCE', '1cd963f21faceb71cdb81218bb026079'), ('PYTHONPATH', '/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('COLCON', '1'), ('CMAKE_PREFIX_PATH', '/opt/ros/humble:/workspaces/ROS2_For_SCOUT_MINI/install/ugv_sdk:/workspaces/ROS2_For_SCOUT_MINI/install/scout_msgs')]), 'shell': False}
+[40.333166] (scout_base) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[40.333809] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/lib/scout_base/scout_base_node\n'}
+[40.339684] (scout_base) StdoutLine: {'line': b'-- Set runtime path of "/workspaces/ROS2_For_SCOUT_MINI/install/scout_base/lib/scout_base/scout_base_node" to ""\n'}
+[40.340030] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base//launch\n'}
+[40.340377] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base//launch/scout_mini_omni_base.launch.py\n'}
+[40.340460] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base//launch/scout_mini_base.launch.py\n'}
+[40.340502] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base//launch/scout_base.launch.py\n'}
+[40.340850] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/ament_index/resource_index/package_run_dependencies/scout_base\n'}
+[40.340984] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/ament_index/resource_index/parent_prefix_path/scout_base\n'}
+[40.341231] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/environment/ament_prefix_path.sh\n'}
+[40.341386] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/environment/ament_prefix_path.dsv\n'}
+[40.341538] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/environment/path.sh\n'}
+[40.341679] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/environment/path.dsv\n'}
+[40.341802] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/local_setup.bash\n'}
+[40.341993] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/local_setup.sh\n'}
+[40.342121] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/local_setup.zsh\n'}
+[40.342270] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/local_setup.dsv\n'}
+[40.342397] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/package.dsv\n'}
+[40.342512] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/ament_index/resource_index/packages/scout_base\n'}
+[40.342553] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/cmake/scout_baseConfig.cmake\n'}
+[40.342681] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/cmake/scout_baseConfig-version.cmake\n'}
+[40.342745] (scout_base) StdoutLine: {'line': b'-- Installing: /workspaces/ROS2_For_SCOUT_MINI/install/scout_base/share/scout_base/package.xml\n'}
+[40.344577] (scout_base) CommandEnded: {'returncode': 0}
+[40.350701] (-) TimerEvent: {}
+[40.356866] (scout_base) JobEnded: {'identifier': 'scout_base', 'rc': 0}
+[40.357806] (-) EventReactorShutdown: {}

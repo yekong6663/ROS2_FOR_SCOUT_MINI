@@ -1,0 +1,105 @@
+{
+    // ==================== 构建配置 ====================
+    "build": {
+        // 指定使用当前目录下的 Dockerfile 来构建镜像
+        "dockerfile": "Dockerfile",
+        // 向 Dockerfile 传递构建参数
+        "args": {
+            // WORKSPACE 参数的值是容器内的工作区路径（VSCode 自动提供）
+            // 该参数可以在 Dockerfile 中用 ARG WORKSPACE 接收
+            // 通常用于在 .bashrc 中自动 source 工作区的环境（如 install/setup.bash）
+            "WORKSPACE": "${containerWorkspaceFolder}"
+        }
+    },
+
+    // ==================== 工作区挂载 ====================
+    // 将本地项目文件夹绑定挂载到容器内的指定路径
+    // source: 宿主机上的项目路径（VSCode 自动提供）
+    // target: 容器内的挂载点，格式为 /workspaces/<项目文件夹名>
+    // type=bind: 双向绑定，文件修改会实时同步
+    // consistency=cached: 优化读写性能（适合开发场景）
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+    // 容器启动后，VSCode 自动将此路径作为工作区打开（即文件浏览器显示的根目录）
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+    // ==================== 用户与权限 ====================
+    // 容器内默认使用的用户名（必须已在 Dockerfile 中创建）
+    // 使用非 root 用户更安全，且避免某些 ROS 节点在 root 下的权限问题
+    "containerUser": "ros",
+
+    // ==================== Docker run 参数 ====================
+    "runArgs": [
+        "--network=host",         // 容器使用宿主机网络栈（不经过 Docker 网桥）
+                                  // 这是 ROS 节点发现（多播/广播）所必需的
+                                  // 注意：仅在 Linux 或 WSL2 下有效，Windows 原生 Docker 不支持
+        "--cap-add=SYS_PTRACE",   // 允许容器内的进程使用 ptrace 系统调用
+                                  // 用于调试器（如 gdb）附加到进程，C++ 断点调试必需
+        "--security-opt=seccomp=unconfined",   // 禁用 seccomp 安全限制
+                                               // Gazebo / rviz 等图形程序可能调用特殊系统调用，放宽限制避免权限错误
+        "--security-opt=apparmor=unconfined",  // 禁用 AppArmor（Linux 安全模块）
+                                               // 同样是为了减少对图形程序的权限干扰
+        "--volume=/tmp/.X11-unix:/tmp/.X11-unix"  // 挂载 X11 的 Unix socket
+                                                  // 使得容器内的 GUI 程序（rviz2、gazebo）可以显示到宿主机屏幕
+                                                  // 左边宿主机路径，右边容器路径，必须一致
+    ],
+
+    // ==================== 容器内环境变量 ====================
+    "containerEnv": {
+        "DISPLAY": ":0",               // 告诉 GUI 程序使用哪个显示器（:0 表示第一个显示器）
+                                       // 在 WSL2 或 Linux 下通常为 :0
+        "QT_X11_NO_MITSHM": "1",       // 禁用 Qt 的 MIT-SHM 扩展，解决某些 X11 环境下的图形崩溃问题
+        "ROS_DOMAIN_ID": "0"           // ROS 2 域 ID，用于隔离不同 ROS 2 系统（多机器人时修改）
+    },
+
+    // ==================== 生命周期钩子（已注释） ====================
+    // 容器创建后执行的命令（常用于自动安装依赖）
+    // 这里注释掉了，因为每次重建都会运行，耗时较长；需要时可手动执行
+    //"postCreateCommand": "rosdep install --from-paths src --ignore-src -r -y || true",
+
+    // ==================== VSCode 自定义 ====================
+    "customizations": {
+        "vscode": {
+            // 容器内 VSCode 的设置（覆盖用户默认设置）
+            "settings": {
+                // 定义终端可用的 shell 配置文件
+                "terminal.integrated.profiles.linux": {
+                    "bash": {
+                        "path": "bash"           // 使用 /bin/bash 作为 shell
+                    }
+                },
+                // 默认使用 bash 终端
+                "terminal.integrated.defaultProfile.linux": "bash",
+                // Python 默认解释器路径（ROS 2 Humble 使用 Python 3.10）
+                "python.defaultInterpreterPath": "/usr/bin/python3",
+                // Python 额外模块搜索路径（让 VSCode 能够索引 ROS 2 的 Python 库）
+                "python.analysis.extraPaths": [
+                    "/opt/ros/humble/lib/python3.10/site-packages",
+                    "/opt/ros/humble/local/lib/python3.10/dist-packages"
+                ],
+                // 禁止 VSCode 自动运行 CMake 配置（减少启动卡顿）
+                "cmake.configureOnOpen": false,
+                // C/C++ 头文件搜索路径（用于智能提示）
+                "C_Cpp.default.includePath": [
+                    "/opt/ros/humble/include/**"
+                ]
+            },
+            // 自动安装的 VSCode 扩展（在容器内安装，不影响宿主机）
+            "extensions": [
+                "dotjoshjohnson.xml",                    // XML 语法高亮
+                "ms-azuretools.vscode-docker",          // Docker 管理
+                "ms-iot.vscode-ros",                    // ROS 消息语法高亮、roscore 状态等
+                "ms-python.python",                     // Python 支持
+                "ms-vscode.cpptools",                   // C/C++ 基础支持
+                "ms-vscode.cpptools-extension-pack",    // C/C++ 扩展包
+                "ms-vscode.cmake-tools",                // CMake 集成
+                "redhat.vscode-yaml",                   // YAML 语法（参数文件、launch 文件）
+                "smilerobotics.urdf",                   // URDF 模型文件语法高亮及预览
+                "streetsidesoftware.code-spell-checker", // 拼写检查
+                "twxs.cmake",                           // CMake 语法高亮
+                "yzhang.markdown-all-in-one",           // Markdown 增强
+                "github.vscode-github-actions",          // GitHub Actions 支持
+                "anthropic.claude-code" 
+            ]
+        }
+    }
+}
