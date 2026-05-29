@@ -34,6 +34,8 @@
                                   // 注意：仅在 Linux 或 WSL2 下有效，Windows 原生 Docker 不支持
         "--cap-add=SYS_PTRACE",   // 允许容器内的进程使用 ptrace 系统调用
                                   // 用于调试器（如 gdb）附加到进程，C++ 断点调试必需
+        "--cap-add=NET_ADMIN",    // 允许容器内配置网络接口（如 ip link set can0）
+                                  // CAN 总线配置必需
         "--security-opt=seccomp=unconfined",   // 禁用 seccomp 安全限制
                                                // Gazebo / rviz 等图形程序可能调用特殊系统调用，放宽限制避免权限错误
         "--security-opt=apparmor=unconfined",  // 禁用 AppArmor（Linux 安全模块）

@@ -29,6 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget \
     # OpenGL 工具集（包含 glxinfo 等），用于诊断图形加速问题
     mesa-utils \
+    # CAN 总线调试工具（candump、cansend 等），底盘通信必需
+    can-utils \
+    # 网络接口管理工具（ifconfig），CAN 设备验证必需
+    net-tools \
     # 清理 apt 缓存，减小镜像体积
     && rm -rf /var/lib/apt/lists/*
 
