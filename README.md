@@ -14,6 +14,11 @@ Acquire::http::Proxy "http://127.0.0.1:7897";
 Acquire::https::Proxy "http://127.0.0.1:7897";
 EOF'
 ```
+还有git的
+```bash
+git config --global http.proxy http://127.0.0.1:7897
+git config --global https.proxy http://127.0.0.1:7897
+```
 
 # CAN总线配置通讯
 
