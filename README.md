@@ -10,8 +10,8 @@ sudo apt install -y libasio-dev
 docker容器中下载慢一定要配置代理，以及根据代理进行配置
 ```bash
 sudo bash -c 'cat > /etc/apt/apt.conf.d/99proxy <<EOF
-Acquire::http::Proxy "http://127.0.0.1:7890";
-Acquire::https::Proxy "http://127.0.0.1:7890";
+Acquire::http::Proxy "http://127.0.0.1:7897";
+Acquire::https::Proxy "http://127.0.0.1:7897";
 EOF'
 ```
 
