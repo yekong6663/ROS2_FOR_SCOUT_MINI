@@ -51,12 +51,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 加入 sudo 组
 # 创建 render 组（若不存在）
 # 加入串口、视频、渲染组，便于访问硬件
+#
+# 接收宿主机 docker 组 GID（用于 Docker-in-Docker 场景）
+# 默认值 999 是常见 Linux 发行版中 docker 组的 GID
+ARG DOCKER_GID=999
 RUN useradd -m -s /bin/bash ros \
     && echo "ros:ros" | chpasswd \
     && usermod -aG sudo ros \
-    && echo "ros ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
+    && echo "%sudo ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers \
     && groupadd -f render \
-    && usermod -aG dialout,video,render ros
+    && usermod -aG dialout,video,render ros \
+    && groupadd -f -g ${DOCKER_GID} docker \
+    && usermod -aG docker ros
 
 # ==================== 自动加载 ROS 2 环境 ====================
 # 在 ros 用户的 .bashrc 中 source ROS 2 的环境，这样每次打开终端无需手动执行
