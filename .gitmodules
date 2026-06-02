@@ -1,6 +1,0 @@
-[submodule "src/scout_ros2"]
-	path = src/scout_ros2
-	url = https://github.com/agilexrobotics/scout_ros2.git
-[submodule "src/ugv_sdk"]
-	path = src/ugv_sdk
-	url = https://github.com/agilexrobotics/ugv_sdk.git

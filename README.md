@@ -1,5 +1,15 @@
 # 参考构建
 官方仓库[链接](https://github.com/agilexrobotics/scout_ros2)
+实际上只需要将官方的SDK克隆到src文件夹下
+
+```bash
+cd src
+git clone https://github.com/westonrobot/ugv_sdk.git
+git clone https://github.com/westonrobot/scout_ros2.git 
+cd ..
+colcon build
+```
+
 # 补充安装
 ## ASIO库
 一个跨平台的 C++ 网络库，用于实现高效的异步通信。它可以处理网络、串口等 I/O 操作，而不会阻塞程序的其他任务。
@@ -55,8 +65,18 @@ sudo modprobe gs_usb
 > ```
 > 安装后再次执行 `sudo modprobe gs_usb`。
 
+输入后应该不会有输出，可以使用以下代码查看
+```bash
+lsmod | grep gs_usb
+```
+会输出：
+```bash
+gs_usb                 24576  0
+can_dev                49152  1 gs_usb
+```
 ## 3. 设置 500K 波特率并使能 CAN-to-USB 适配器（容器内执行）
 ```bash
+sudo apt update && sudo apt install -y iproute2 //安装iproute2
 sudo ip link set can0 up type can bitrate 500000
 ```
 
@@ -64,7 +84,15 @@ sudo ip link set can0 up type can bitrate 500000
 ```bash
 ifconfig -a
 ```
-正常情况下应能看到 `can0` 设备。
+正常情况下应能看到 `can0` 设备，比如
+```bash
+can0: flags=193<UP,RUNNING,NOARP>  mtu 16
+        unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 10  (UNSPEC)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+```
 
 ## 5. 测试 CAN 通信（容器内执行）
 
