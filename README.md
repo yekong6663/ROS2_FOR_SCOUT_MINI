@@ -1,13 +1,39 @@
+# 工作空间结构
+
+```
+ROS2_FOR_SCOUT_MINI/
+├── src/                        # colcon 工作源码目录
+│   ├── FAST_LIO -> ../dependencies/FAST_LIO     # 符号链接 → 第三方
+│   ├── livox_ros_driver2 -> ../dependencies/livox_ros_driver2
+│   ├── scout_ros2 -> ../dependencies/scout_ros2
+│   └── my_package/             # 你自己的 ROS2 包放这里
+├── dependencies/               # 第三方克隆源码（只读，不直接修改）
+│   ├── FAST_LIO/
+│   ├── livox_ros_driver2/
+│   ├── scout_ros2/
+│   ├── Livox-SDK2/
+│   └── ugv_sdk/
+├── build/                      # colcon 构建产物
+├── install/                    # colcon 安装产物
+└── log/                        # 构建日志
+```
+> **设计思路**：第三方代码物理上放在 `dependencies/`，通过符号链接映射到 `src/`，这样 colcon 能找到它们，而你的代码和第三方代码分开管理，互不干扰。
+
+
 # SCOUT MINI底盘
+
+
 ## 1. 基本代码
 官方仓库[链接](https://github.com/agilexrobotics/scout_ros2)
-实际上只需要将官方的SDK克隆到src文件夹下
+实际上只需要将官方的SDK克隆到dependencies文件夹下
 
 ```bash
 cd /workspaces/ROS2_FOR_SCOUT_MINI/dependencies
 git clone https://github.com/westonrobot/ugv_sdk.git
-git clone https://github.com/westonrobot/scout_ros2.git 
-cd ..
+git clone https://github.com/westonrobot/scout_ros2.git
+# 创建符号链接，让 colcon 能找到这些包
+ln -s ../dependencies/scout_ros2 /workspaces/ROS2_FOR_SCOUT_MINI/src/scout_ros2
+cd /workspaces/ROS2_FOR_SCOUT_MINI
 colcon build
 ```
 
@@ -143,7 +169,7 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 
 # 建图SLAM 
 构建参考开源库：[FAST_LIO2](https://github.com/hku-mars/FAST_LIO/blob/ROS2/README.md)
-## mid360的使用
+
 ## FAST_LIO2的构建
 ### 1. 先决条件
 #### PCL 和 Eigen
@@ -152,10 +178,6 @@ sudo apt update
 sudo apt install -y libpcl-dev libeigen3-dev
 ```
 #### livox_ros_driver2
-
-这是 FAST-LIO2 编译和运行**最关键的前置条件**，也是新手最容易卡住的地方。官方文档的说明写得比较简略，这里把它拆解成可以直接照着做的步骤，并补充了容易出错的细节。
-
-你的 SCOUT mini 容器里已经有 MID-360 雷达，这一步必不可少。按下面的顺序执行即可。
 
 ##### 第一步：安装 Livox SDK2（底层驱动）
 
@@ -175,8 +197,10 @@ cmake .. && sudo make install -j4
 使用官方推荐的分支：
 
 ```bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI/src
+cd /workspaces/ROS2_FOR_SCOUT_MINI/dependencies
 git clone -b feature/use-standard-unit https://github.com/Ericsii/livox_ros_driver2.git
+# 创建符号链接，让 colcon 能找到这个包
+ln -s ../dependencies/livox_ros_driver2 /workspaces/ROS2_FOR_SCOUT_MINI/src/livox_ros_driver2
 cd /workspaces/ROS2_FOR_SCOUT_MINI
 colcon build --packages-select livox_ros_driver2
 ```
@@ -215,8 +239,10 @@ ros2 topic list | grep livox
 克隆仓库并进行 colcon 构建：
 
 ```bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI/src
+cd /workspaces/ROS2_FOR_SCOUT_MINI/dependencies
 git clone https://github.com/Ericsii/FAST_LIO.git --recursive
+# 创建符号链接，让 colcon 能找到这个包
+ln -s ../dependencies/FAST_LIO /workspaces/ROS2_FOR_SCOUT_MINI/src/FAST_LIO
 cd /workspaces/ROS2_FOR_SCOUT_MINI
 rosdep update
 rosdep install --from-paths src --ignore-src -y
@@ -262,7 +288,7 @@ ros2 launch livox_ros_driver2 msg_MID360_launch.py
 
 #### 3.2 针对 Livox 系列 + 外部 IMU 的配置
 
-`mapping_avia.launch` 理论上支持 MID-70、MID-40 等 Livox 雷达，但运行前需要配置 `config/avia.yaml` 中的以下参数：
+`mapping_avia.launch` 理论上支持 MID-70、MID-40 等 Livox 雷达，但运行前需要配置 `config/mid360.yaml` 中的以下参数：
 
 | 参数 | 说明 |
 | :--- | :--- |
@@ -288,3 +314,149 @@ ros2 launch livox_ros_driver2 msg_MID360_launch.py
 | `3` | Y 轴值 |
 | `4` | Z 轴值 |
 | `5` | 强度值 |
+
+好的，我已根据你提供的笔记和CSDN教程，对`mid360的使用`部分进行了完善和整合。更新后的内容如下，主要补充了驱动配置、FAST-LIO适配及常见问题排查等关键信息。
+
+---
+
+## mid360的使用
+
+[> mid-360的构建参考](https://blog.csdn.net/m0_55117804/article/details/142644882)
+
+### 硬件连接
+
+Mid-360 雷达通过以太网接口连接工控机，供电电压为 **9-27V DC**。使用前需确认：
+
+- 雷达网口与工控机网口通过网线直连
+- 雷达电源线正确连接（**红正黑负**）
+- 上电后雷达指示灯正常（**绿色呼吸灯**表示正常工作）
+
+### 网络配置
+
+Mid-360 使用静态 IP 通信，需将工控机网卡配置为与雷达同一网段。
+
+#### 1. 确认雷达 IP
+
+雷达出厂默认 IP 为 **`192.168.1.1XX`**，其中 **`XX` 是雷达 SN 码的最后两位数字**。
+
+> 本次使用的 mid-360 的 SN 码尾号为 `81`，则 IP 为 `192.168.1.181`。也可通过 Livox Viewer 软件查看和修改。
+
+#### 2. 配置工控机网卡 IP
+
+先用 `ip a` 查看连接雷达的网卡名称（如 `eth0`、`enp2s0` 等），然后配置为与雷达同一网段的静态 IP。
+
+**临时配置（测试用）：**
+
+```bash
+sudo ip addr add 192.168.1.50/24 dev eth0   # eth0 改为实际网卡名
+sudo ip link set eth0 up
+```
+
+**永久配置（图形化界面）：**
+
+在 Ubuntu 设置中，按照下图配置 IPv4 地址、子网掩码和网关。**无论雷达序列号是多少，工控机端的 IP 都可以统一设为 `192.168.1.50`**。
+
+![图像](https://i-blog.csdnimg.cn/direct/f28283e337234a26ac3fc1fdcc87b5d3.png)
+![图像](https://xju-hurricane-team.github.io/Vision/navigation/lidar/picture/lidar_ubuntu.png)
+
+#### 3. 验证网络连通性
+
+```bash
+ping 192.168.1.181   # 替换为你的雷达实际 IP
+```
+
+如果能 ping 通，说明网络配置正确。
+
+### Livox 驱动配置
+
+#### 1. 配置文件说明
+
+Mid-360 的驱动配置文件位于 `dependencies/livox_ros_driver2/config/MID360_config.json`，关键参数：
+
+| 参数 | 说明 | 本次配置值 |
+| :--- | :--- | :--- |
+| `host_net_info.cmd_data_ip` | 工控机接收雷达命令数据的 IP | `192.168.1.50` |
+| `host_net_info.push_msg_ip` | 工控机接收雷达推送消息的 IP | `192.168.1.50` |
+| `host_net_info.point_data_ip` | 工控机接收点云数据的 IP | `192.168.1.50` |
+| `host_net_info.imu_data_ip` | 工控机接收 IMU 数据的 IP | `192.168.1.50` |
+| `lidar_configs[0].ip` | 雷达 IP 地址 | `192.168.1.181` |
+| `lidar_configs[0].pcl_data_type` | 点云数据类型（1=笛卡尔坐标） | `1` |
+| `lidar_configs[0].pattern_mode` | 扫描模式（0=标准模式） | `0` |
+
+将前四个关于主机的 ip （即`host_net_info`下）全部修改为`192.168.1.50`，将关于雷达的配置（即`lidar_configs`下）的 ip 修改为对于雷达的配置，即`192.168.1.181`.
+
+
+#### 2. 外参配置
+
+在`lidar_configs`下的雷达在机器人上的安装外参在 `lidar_configs[0].extrinsic_parameter` 中配置：
+
+```json
+"extrinsic_parameter" : {
+    "roll": 0.0,
+    "pitch": 0.0,
+    "yaw": 0.0,
+    "x": 0,
+    "y": 0,
+    "z": 0
+}
+```
+
+单位为：角度（度）、平移（毫米）。如果需要精确建图，建议通过标定工具获取准确外参后再填入。
+
+#### 3. 启动雷达驱动
+
+```bash
+# 确保 source 了工作空间
+source install/setup.bash
+
+# 启动 Mid-360 雷达驱动
+ros2 launch livox_ros_driver2 msg_MID360_launch.py
+```
+
+> 必须使用 `msg_MID360_launch.py` 启动驱动，因为只有 `livox_ros_driver2/CustomMsg` 消息格式包含每个激光点的时间戳，这对运动畸变校正至关重要。
+
+#### 4. 验证雷达数据
+
+打开另一个终端，检查话题是否正常发布：
+
+```bash
+source install/setup.bash
+
+# 查看 livox 相关话题
+ros2 topic list | grep livox
+```
+
+正常情况下应看到：
+```
+/livox/lidar
+/livox/imu
+```
+
+进一步查看数据频率：
+```bash
+ros2 topic hz /livox/lidar   # 点云数据，通常 10Hz
+ros2 topic hz /livox/imu      # IMU 数据，通常 100Hz
+```
+
+### FAST_LIO 中的 Mid-360 配置
+
+#### 1. 配置文件 `mid360.yaml` 关键参数
+
+雷达驱动正常工作后，需要检查 FAST_LIO 的配置文件 `dependencies/FAST_LIO/config/mid360.yaml` 中的参数是否与实际匹配：
+
+| 参数 | 说明 | 本次配置值 |
+| :--- | :--- | :--- |
+| `common.lid_topic` | LiDAR 点云话题名称 | `/livox/lidar` |
+| `common.imu_topic` | IMU 话题名称 | `/livox/imu` |
+| `common.time_sync_en` | 软件时间同步（仅无硬件同步时开启） | `false` |
+| `common.time_offset_lidar_to_imu` | LiDAR 到 IMU 的时间偏移（秒） | `0.0` |
+| `preprocess.lidar_type` | 雷达类型（1=Livox） | `1` |
+| `preprocess.scan_line` | 扫描线数 | `4` (Mid-360 为 4 线) |
+| `preprocess.blind` | 盲区距离（米） | `0.5` |
+| `preprocess.scan_rate` | 扫描频率（Hz） | `10` |
+| `mapping.extrinsic_T` | LiDAR 在 IMU 坐标系下的平移（米） | `[-0.011, -0.02329, 0.04412]` |
+| `mapping.extrinsic_R` | LiDAR 在 IMU 坐标系下的旋转矩阵 | 单位矩阵 |
+| `mapping.extrinsic_est_en` | 是否在线估计外参 | `true` (无精确外参时可开启) |
+| `pcd_save.pcd_save_en` | 是否保存 PCD 文件 | `true` |
+
+> **外参说明**：FAST-LIO 中 `extrinsic_T` 和 `extrinsic_R` 定义的是 **LiDAR 在 IMU 本体坐标系下的位姿**（即 LiDAR → IMU 的变换）。如果此参数不准确，建图会出现重影或变形。
