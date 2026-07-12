@@ -4,7 +4,9 @@
       "Bash(getent group *)",
       "Bash(stat -c '%g' /var/run/docker.sock)",
       "Read(//var/run/**)",
-      "Bash(python3 -m json.tool /home/fishros/xxls_devcontainer/SCOUT_MINI/ROS2_FOR_SCOUT_MINI/.devcontainer/devcontainer.json)"
+      "Bash(python3 -m json.tool /home/fishros/xxls_devcontainer/SCOUT_MINI/ROS2_FOR_SCOUT_MINI/.devcontainer/devcontainer.json)",
+      "Bash(apt-cache search *)",
+      "Bash(git checkout *)"
     ]
   }
 }

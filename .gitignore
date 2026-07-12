@@ -1,4 +1,7 @@
 build/
 install/
 log/
-
+deps_ws/build/
+deps_ws/install/
+deps_ws/log/
+dependencies/
