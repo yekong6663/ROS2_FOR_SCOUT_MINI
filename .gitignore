@@ -1,7 +1,9 @@
 build/
 install/
 log/
-deps_ws/build/
-deps_ws/install/
-deps_ws/log/
-dependencies/
+
+比赛规则.pdf
+.codex
+.claude
+.agents
+

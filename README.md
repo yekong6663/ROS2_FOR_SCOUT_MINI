@@ -2,27 +2,28 @@
 
 ```
 ROS2_FOR_SCOUT_MINI/
-├── deps_ws/                    # 第三方依赖工作空间（只编译一次）
-│   ├── src/
-│   │   ├── FASTLIO2_ROS2/      # FAST-LIO2 完整版（里程计+回环+重定位+地图优化）
-│   │   ├── livox_ros_driver2/  # Livox ROS2 雷达驱动
-│   │   ├── scout_ros2/         # Scout Mini 底盘驱动
-│   │   ├── ugv_sdk/            # 底盘通信 SDK
-│   │   ├── Livox-SDK2/         # Livox 底层 SDK（cmake 安装）
-│   │   └── Sophus/             # 李群/李代数库（cmake 安装）
-│   ├── build/
-│   └── install/
-├── src/                        # 你自己的 ROS2 包（频繁修改）
-│   └── my_package/
-├── build/
-├── install/
-└── log/
+├── third_party/                          # 第三方依赖（只编译一次）
+│   ├── fast_lio2_ws/                     # FAST-LIO2 相关工作空间
+│   │   └── src/
+│   │       ├── FASTLIO2_ROS2/            # FAST-LIO2 完整版（里程计+回环+重定位+地图优化）
+│   │       ├── livox_ros_driver2/        # Livox ROS2 雷达驱动
+│   │       ├── Livox-SDK2/               # Livox 底层 SDK（cmake 安装）
+│   │       └── Sophus/                   # 李群/李代数库（cmake 安装）
+│   └── scout_mini_ws/                    # Scout Mini 相关工作空间
+│       └── src/
+│           ├── scout_ros2/               # Scout Mini 底盘驱动（多功能包子目录）
+│           └── ugv_sdk/                  # 底盘通信 SDK
+├── mine_ws/                              # 你自己的 ROS2 包（频繁修改）
+│   └── src/
+├── log/
+└── 比赛规则.pdf
 ```
 
-> **设计思路**：两个独立工作空间。第三方包在 `deps_ws/`，只编译一次；你自己的包在 `src/`，修改后单独编译。通过 overlay 叠加使用：
+> **设计思路**：三个独立工作空间。第三方包按功能拆分为 `fast_lio2_ws/` 和 `scout_mini_ws/`，只编译一次；你自己的包在 `mine_ws/`，修改后单独编译。通过 overlay 叠加使用：
 > ```bash
-> source deps_ws/install/setup.bash   # 先 source 依赖
-> source install/setup.bash           # 再 source 自己的
+> source third_party/fast_lio2_ws/install/setup.bash    # 先 source FAST-LIO2 依赖
+> source third_party/scout_mini_ws/install/setup.bash   # 再 source Scout 底盘依赖
+> source mine_ws/install/setup.bash                     # 最后 source 自己的
 > ```
 
 
@@ -33,15 +34,14 @@ ROS2_FOR_SCOUT_MINI/
 官方仓库[链接](https://github.com/agilexrobotics/scout_ros2)
 
 ```bash
-# 克隆到底盘依赖工作空间
-cd /workspaces/ROS2_FOR_SCOUT_MINI/deps_ws/src
+# 克隆到底盘工作空间
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws/src
 git clone https://github.com/westonrobot/ugv_sdk.git --depth 1
 git clone https://github.com/westonrobot/scout_ros2.git --depth 1
 
-# 编译依赖工作空间
-cd /workspaces/ROS2_FOR_SCOUT_MINI/deps_ws
-# 注意scout_ros2不是功能包名，其之下有多个功能包
-colcon build --packages-select scout_msgs scout_description scout_base ugv_sdk
+# 编译底盘工作空间
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws
+colcon build 
 ```
 
 ### 1.2 补充安装
@@ -110,7 +110,7 @@ can_dev                49152  1 gs_usb
 ```
 #### 3. 设置 500K 波特率并使能 CAN-to-USB 适配器（容器内执行）
 ```bash
-sudo apt update && sudo apt install -y iproute2 //安装iproute2
+sudo apt update && sudo apt install -y iproute2  # 安装iproute2
 sudo ip link set can0 up type can bitrate 500000
 ```
 
@@ -140,10 +140,10 @@ candump can0
 #### 6. 启动底盘 ROS2 驱动（Docker 容器内执行）
 
 ```bash
-# 编译依赖工作空间
-cd /workspaces/ROS2_FOR_SCOUT_MINI
-colcon build --base-paths deps_ws/src --install-base deps_ws/install --build-base deps_ws/build
-source deps_ws/install/setup.bash
+# 编译底盘工作空间
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws
+colcon build
+source install/setup.bash
 
 # 启动 Scout Mini 底盘驱动
 ros2 launch scout_base scout_mini_base.launch.py port_name:=can0
@@ -167,9 +167,9 @@ ros2 topic pub --rate 20 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1, y: 
 ## 3. 底盘运行测试
 执行
 ```bash
-//开启底盘运动结点
+# 开启底盘运动结点
 ros2 launch scout_base scout_base.launch.py is_scout_mini:=true
-//使用键盘控制运行
+# 使用键盘控制运行
 ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 键盘控制运行表
@@ -215,60 +215,80 @@ sudo apt install -y libpcl-dev libeigen3-dev libasio-dev
 sudo apt install -y ros-humble-gtsam
 ```
 
-### Sophus 编译安装
+### Livox-SDK2
 
 ```bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI/deps_ws/src
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/src
+git clone https://github.com/Livox-SDK/Livox-SDK2.git
+cd Livox-SDK2 && mkdir build && cd build
+cmake .. 
+make -j4
+sudo make install
+```
+使用有build的重新构建需要先删除相关文件夹：
+```bash
+rm -rf build
+```
+### livox_ros_driver2
+
+```bash
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/src
+git clone https://github.com/Livox-SDK/livox_ros_driver2.git
+```
+
+> `build.sh` 除了编译，还会做三件必要的事：复制 `package_ROS2.xml` → `package.xml`、复制 `launch_ROS2/` → `launch/`、传入 `-DROS_EDITION=ROS2`。所以**首次构建必须执行脚本**。但它内部调用 `colcon build` 会编译 `src/` 下所有包，如果 FASTLIO2_ROS2 已存在会一起编译导致卡死。
+>
+> **正确做法**：先构建 livox，再 clone FASTLIO2_ROS2：
+
+```bash
+# 此时 src/ 下只有 Livox-SDK2 和 livox_ros_driver2，没有 FASTLIO2_ROS2
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/src/livox_ros_driver2
+source /opt/ros/humble/setup.sh
+./build.sh humble
+```
+
+> 如果已经 clone 了 FASTLIO2_ROS2，先临时移走再执行脚本：
+> ```bash
+> mv /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/src/FASTLIO2_ROS2 /tmp/
+> cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/src/livox_ros_driver2
+> ./build.sh humble
+> mv /tmp/FASTLIO2_ROS2 /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/src/
+> ```
+>
+> 后续如果只修改了 livox 驱动代码，不需要重新执行脚本，直接：
+> ```bash
+> cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws
+> colcon build --packages-select livox_ros_driver2 --cmake-args -DROS_EDITION=ROS2
+> ```
+
+### Sophus 编译安装
+```bash
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/src
 git clone https://github.com/strasdat/Sophus.git --depth 1 --branch 1.22.10
 cd Sophus && mkdir build && cd build
 cmake .. -DSOPHUS_USE_BASIC_LOGGING=ON
 make -j4
 sudo make install
 ```
-新的`Sophus`依赖fmt，可以在`CMakeLists.txt`中添加`add_compile_definitions(SOPHUS_USE_BASIC_LOGGING)`去除，否则会报错
-### Livox SDK2
-
-```bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI/deps_ws/src
-git clone https://github.com/Livox-SDK/Livox-SDK2.git
-cd Livox-SDK2 && mkdir build && cd build
-cmake .. && sudo make install -j4
-```
-
-### livox_ros_driver2
-
-```bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI/deps_ws/src
-git clone -b feature/use-standard-unit https://github.com/Ericsii/livox_ros_driver2.git
-cd ..
-colcon build --symlink-install --packages-select livox_ros_driver2
-```
+> 新的 `Sophus` 依赖 `fmt` 库。上面通过 `-DSOPHUS_USE_BASIC_LOGGING=ON` 关闭 fmt 依赖；也可以在 `CMakeLists.txt` 中添加 `add_compile_definitions(SOPHUS_USE_BASIC_LOGGING)` 达到同样效果，否则会报错。
 
 ### FASTLIO2_ROS2
-
 ```bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI/deps_ws/src
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/src
 git clone https://github.com/liangheming/FASTLIO2_ROS2.git
 cd ..
 # FASTLIO2_ROS2下的五个功能包
 colcon build --packages-select fastlio2 
-colcon build --packages-select hba 
 colcon build --packages-select interface
+colcon build --packages-select hba 
 colcon build --packages-select localizer 
 colcon build --packages-select pgo
 ```
-### 编译自己的包
 
-```bash
-source /workspaces/ROS2_FOR_SCOUT_MINI/deps_ws/install/setup.bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI
-colcon build
-source install/setup.bash
-```
 
 ## 里程计配置
 
-配置文件：[`deps_ws/src/FASTLIO2_ROS2/fastlio2/config/lio.yaml`](deps_ws/src/FASTLIO2_ROS2/fastlio2/config/lio.yaml)
+配置文件：[`third_party/fast_lio2_ws/src/FASTLIO2_ROS2/fastlio2/config/lio.yaml`](third_party/fast_lio2_ws/src/FASTLIO2_ROS2/fastlio2/config/lio.yaml)
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
@@ -314,7 +334,7 @@ ping 192.168.1.181
 
 ### Livox 驱动配置
 
-配置文件：[`deps_ws/src/livox_ros_driver2/config/MID360_config.json`](deps_ws/src/livox_ros_driver2/config/MID360_config.json)
+配置文件：[`third_party/fast_lio2_ws/src/livox_ros_driver2/config/MID360_config.json`](third_party/fast_lio2_ws/src/livox_ros_driver2/config/MID360_config.json)
 
 需要修改的字段：
 - `host_net_info` 下 4 个 IP → `192.168.1.50`
@@ -323,66 +343,11 @@ ping 192.168.1.181
 ### 启动雷达
 
 ```bash
-source install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
 ros2 launch livox_ros_driver2 msg_MID360_launch.py
 ```
 
 验证：`ros2 topic list | grep livox` 应看到 `/livox/lidar` 和 `/livox/imu`。
-
-## 完整使用流程
-
-### 1. 仅里程计（最简启动）
-
-```bash
-ros2 launch fastlio2 lio_launch.py
-```
-
-输出：
-- `/fastlio2/lio_odom` — 里程计位姿
-- `/fastlio2/body_cloud` — 去畸变点云
-
-### 2. 里程计 + 回环（建图模式，赛前跑一圈用）
-
-```bash
-# 终端 1：里程计
-ros2 launch fastlio2 lio_launch.py
-
-# 终端 2：回环检测 + 位姿图优化
-ros2 launch pgo pgo_launch.py
-```
-
-跑完后保存全局地图：
-
-```bash
-ros2 service call /pgo/save_maps interface/srv/SaveMaps “{file_path: '/path/to/save_dir', save_patches: true}”
-```
-
-生成文件：
-- `map.pcd` — 全局点云地图（给 localizer 用）
-- `patches/` — 子地图（给 hba 用）
-- `poses.txt` — 关键帧位姿
-
-### 3. 里程计 + 重定位（比赛时定位模式）
-
-```bash
-# 终端 1：同时启动里程计和重定位节点
-ros2 launch localizer localizer_launch.py
-
-# 终端 2：加载地图并执行重定位（xyzyawpitchroll 为起点附近的大致位姿）
-ros2 service call /localizer/relocalize interface/srv/Relocalize “{pcd_path: '/path/to/map.pcd', x: 0.0, y: 0.0, z: 0.0, yaw: 0.0, pitch: 0.0, roll: 0.0}”
-
-# 终端 3：检查重定位是否成功
-ros2 service call /localizer/relocalize_check interface/srv/IsValid “{code: 0}”
-```
-
-重定位成功后，`/tf` 树中发布 `map → lidar` 变换，里程计输出转换为全局坐标系位姿，可直接给导航使用。
-
-### 4. 地图精化（可选，建图后执行）
-
-```bash
-ros2 launch hba hba_launch.py
-ros2 service call /hba/refine_map interface/srv/RefineMap “{maps_path: '/path/to/save_dir'}”
-```
 
 ## 配置参数调优
 
@@ -417,10 +382,11 @@ ros2 service call /hba/refine_map interface/srv/RefineMap “{maps_path: '/path/
 ### 编译时内存爆满卡死
 
 ```bash
-# 限制并行数 + 分步编译依赖工作空间
-colcon build --base-paths deps_ws/src --install-base deps_ws/install --build-base deps_ws/build --parallel-workers 1 --packages-select interface
-colcon build --base-paths deps_ws/src --install-base deps_ws/install --build-base deps_ws/build --parallel-workers 1 --packages-select fastlio2
-colcon build --base-paths deps_ws/src --install-base deps_ws/install --build-base deps_ws/build --parallel-workers 1 --packages-select pgo localizer hba
+# 限制并行数 + 分步编译 fast_lio2_ws
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws
+colcon build --parallel-workers 1 --packages-select interface
+colcon build --parallel-workers 1 --packages-select fastlio2
+colcon build --parallel-workers 1 --packages-select pgo localizer hba
 ```
 
 ### livox_ros_driver2 编译报错 `Unknown arguments`
@@ -450,3 +416,157 @@ colcon build --base-paths deps_ws/src --install-base deps_ws/install --build-bas
 - [FASTLIO2_ROS2](https://github.com/liangheming/FASTLIO2_ROS2)
 - [FAST-LIO2 原版](https://github.com/hku-mars/FAST_LIO)
 - [mid-360 配置教程](https://blog.csdn.net/m0_55117804/article/details/142644882)
+
+## 完整使用流程
+
+下面的流程针对 `third_party/fast_lio2_ws/src/FASTLIO2_ROS2`，使用 Livox MID-360。该仓库包含 5 个 ROS 2 功能包：
+
+| 功能包 | 作用 | 何时使用 |
+|--------|------|----------|
+| `interface` | 定义保存地图、重定位、地图精化等服务接口 | 被其他包依赖，不需要单独启动 |
+| `fastlio2` | 融合 Livox 点云和 IMU，输出实时里程计、轨迹与点云 | 只需要实时里程计，或不需要回环的基础建图时使用 |
+| `pgo` | 在 FAST-LIO2 基础上检测回环并进行位姿图优化，同时保存地图 | 正式采集并保存地图时使用 |
+| `localizer` | 将当前点云与已有 PCD 地图配准，完成全局重定位 | 已有地图、需要定位运行时使用 |
+| `hba` | 使用保存的关键帧和位姿离线精化地图 | 建图结束后，可选使用 |
+
+> `pgo_launch.py` 和 `localizer_launch.py` 都会自动启动 `fastlio2`，不要再同时运行 `lio_launch.py`，否则会出现节点名和话题冲突。
+
+### 1. 每个新终端先加载环境
+
+```bash
+cd /workspaces/ROS2_FOR_SCOUT_MINI
+source /opt/ros/humble/setup.bash
+source third_party/fast_lio2_ws/install/setup.bash
+```
+
+如果修改了源码，重新编译并再次加载环境：
+
+```bash
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install --parallel-workers 1 \
+  --packages-select interface fastlio2 pgo localizer hba
+source install/setup.bash
+```
+
+### 2. 启动 Livox MID-360
+
+先确认 `livox_ros_driver2/config/MID360_config.json` 中雷达 IP 和本机 IP 正确，然后启动驱动：
+
+```bash
+ros2 launch livox_ros_driver2 msg_MID360_launch.py
+```
+
+另开终端加载环境后检查数据：
+
+```bash
+ros2 topic hz /livox/lidar
+ros2 topic hz /livox/imu
+```
+
+两个话题都有稳定输出后，才能继续运行 FAST-LIO2。默认输入话题定义在 `fastlio2/config/lio.yaml`。
+
+### 3. 选择一种运行模式
+
+#### 模式 A：仅运行 FAST-LIO2 里程计
+
+适用于测试雷达、查看实时轨迹，或者不需要回环优化的场景：
+
+```bash
+ros2 launch fastlio2 lio_launch.py
+```
+
+主要输出：
+
+| 输出 | 内容 |
+|------|------|
+| `/fastlio2/lio_odom` | 激光惯性里程计 |
+| `/fastlio2/lio_path` | 运行轨迹 |
+| `/fastlio2/body_cloud` | 当前帧去畸变点云，供 PGO 和重定位使用 |
+| `/fastlio2/world_cloud` | 世界坐标系中的点云 |
+
+#### 模式 B：回环建图并保存地图（推荐建图方式）
+
+该 launch 会同时启动 `fastlio2`、`pgo` 和 RViz：
+
+```bash
+ros2 launch pgo pgo_launch.py
+```
+
+驾驶机器人完整覆盖目标区域，并尽量回到经过的位置形成回环。建图结束后另开终端保存：
+
+```bash
+mkdir -p /workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01
+ros2 service call /pgo/save_maps interface/srv/SaveMaps \
+  "{file_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01', save_patches: true}"
+```
+
+保存成功后目录中应包含：
+
+```text
+site_01/
+├── map.pcd       # 完整地图，供 localizer 使用
+├── poses.txt     # 关键帧位姿，供 HBA 使用
+└── patches/      # 关键帧点云，供 HBA 使用
+```
+
+如果以后不需要 HBA，可以把 `save_patches` 设为 `false`，只保存 `map.pcd`；需要地图精化时必须设为 `true`。
+
+#### 模式 C：载入已有地图进行重定位
+
+先启动 Livox 驱动，再启动重定位；该 launch 会同时启动 `fastlio2`、`localizer` 和 RViz：
+
+```bash
+ros2 launch localizer localizer_launch.py
+```
+
+另开终端调用重定位服务。`x/y/z/yaw/pitch/roll` 是机器人在地图中的大致初始位姿，角度单位为弧度：
+
+```bash
+ros2 service call /localizer/relocalize interface/srv/Relocalize \
+  "{pcd_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01/map.pcd', x: 0.0, y: 0.0, z: 0.0, yaw: 0.0, pitch: 0.0, roll: 0.0}"
+```
+
+查询重定位结果：
+
+```bash
+ros2 service call /localizer/relocalize_check interface/srv/IsValid "{code: 0}"
+```
+
+返回 `valid: true` 表示成功。成功后 `localizer` 发布 `map -> lidar` TF；如果失败，应让初始位姿更接近真实位置，或调整 `localizer/config/localizer.yaml` 的配准阈值。
+
+### 4. 使用 HBA 精化地图（可选）
+
+HBA 不是实时建图节点。它读取 PGO 保存的 `patches/` 和 `poses.txt`，优化关键帧位姿并发布精化点云：
+
+```bash
+ros2 launch hba hba_launch.py
+```
+
+另开终端开始精化：
+
+```bash
+ros2 service call /hba/refine_map interface/srv/RefineMap \
+  "{maps_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01'}"
+```
+
+精化结果会发布在 `/hba/map_points`，可在 RViz 中检查。需要保存优化后的位姿时调用：
+
+```bash
+ros2 service call /hba/save_poses interface/srv/SavePoses \
+  "{file_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01/refined_poses.txt'}"
+```
+
+### 5. 推荐的实际顺序
+
+```text
+配置雷达 IP
+  -> 启动 livox_ros_driver2
+  -> 检查 /livox/lidar 和 /livox/imu
+  -> 启动 pgo_launch.py 完成建图
+  -> 调用 /pgo/save_maps 保存 map.pcd、patches 和 poses.txt
+  -> （可选）用 hba 精化地图
+  -> 下次运行启动 localizer_launch.py
+  -> 调用 /localizer/relocalize 加载 map.pcd
+  -> valid: true 后使用 map -> lidar TF 进行全局定位
+```
