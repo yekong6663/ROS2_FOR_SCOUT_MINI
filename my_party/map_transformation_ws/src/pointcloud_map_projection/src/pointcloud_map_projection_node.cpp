@@ -1,178 +1,182 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <functional>
-#include <stdexcept>
+#include <cstdlib>
+#include <limits>
 #include <string>
-#include <vector>
 
 #include "nav_msgs/msg/occupancy_grid.hpp"
-#include "nav_msgs/msg/odometry.hpp"
+#include "pcl/filters/passthrough.h"
+#include "pcl/filters/radius_outlier_removal.h"
+#include "pcl/filters/voxel_grid.h"
+#include "pcl/io/pcd_io.h"
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
-#include "pcl_conversions/pcl_conversions.h"
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/point_cloud2.hpp"
 
 class PointcloudMapProjectionNode : public rclcpp::Node
 {
 public:
   PointcloudMapProjectionNode() : Node("pointcloud_map_projection")
   {
-    input_topic_ = declare_parameter<std::string>("input_topic", "/fastlio2/world_cloud");
-    odom_topic_ = declare_parameter<std::string>("odom_topic", "/fastlio2/lio_odom");
-    output_topic_ = declare_parameter<std::string>("output_topic", "/projected_map");
-    frame_id_ = declare_parameter<std::string>("frame_id", "odom");
-    resolution_ = declare_parameter<double>("resolution", 0.10);
-    width_ = declare_parameter<int>("width", 800);
-    height_ = declare_parameter<int>("height", 800);
-    origin_x_ = declare_parameter<double>("origin_x", -40.0);
-    origin_y_ = declare_parameter<double>("origin_y", -40.0);
-    obstacle_min_height_ = declare_parameter<double>("obstacle_min_height", 0.15);
-    obstacle_max_height_ = declare_parameter<double>("obstacle_max_height", 1.20);
-    min_hits_ = declare_parameter<int>("min_hits", 2);
-    mark_free_space_ = declare_parameter<bool>("mark_free_space", true);
+    pcd_file_ = declare_parameter<std::string>("pcd_file", "");
+    output_topic_ = declare_parameter<std::string>("output_topic", "/map");
+    frame_id_ = declare_parameter<std::string>("frame_id", "map");
+    resolution_ = declare_parameter<double>("resolution", 0.05);
+    z_min_ = declare_parameter<double>("z_min", 0.15);
+    z_max_ = declare_parameter<double>("z_max", 1.20);
+    voxel_leaf_size_ = declare_parameter<double>("voxel_leaf_size", 0.05);
+    enable_radius_filter_ = declare_parameter<bool>("enable_radius_filter", true);
+    radius_search_ = declare_parameter<double>("radius_search", 0.15);
+    min_neighbors_ = declare_parameter<int>("min_neighbors", 3);
+    map_padding_ = declare_parameter<double>("map_padding", 0.50);
+    unobserved_value_ = declare_parameter<int>("unobserved_value", -1);
 
-    if (resolution_ <= 0.0 || width_ <= 0 || height_ <= 0 || min_hits_ <= 0) {
-      throw std::runtime_error("resolution, width, height and min_hits must be positive");
+    if (!validateParameters()) {
+      return;
     }
-
-    grid_.info.resolution = resolution_;
-    grid_.info.width = static_cast<uint32_t>(width_);
-    grid_.info.height = static_cast<uint32_t>(height_);
-    grid_.info.origin.position.x = origin_x_;
-    grid_.info.origin.position.y = origin_y_;
-    grid_.info.origin.orientation.w = 1.0;
-    grid_.data.assign(static_cast<size_t>(width_ * height_), -1);
-    hits_.assign(grid_.data.size(), 0);
 
     map_pub_ = create_publisher<nav_msgs::msg::OccupancyGrid>(
       output_topic_, rclcpp::QoS(1).transient_local());
-    odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
-      odom_topic_, rclcpp::QoS(20),
-      std::bind(&PointcloudMapProjectionNode::odomCallback, this, std::placeholders::_1));
-    cloud_sub_ = create_subscription<sensor_msgs::msg::PointCloud2>(
-      input_topic_, rclcpp::SensorDataQoS(),
-      std::bind(&PointcloudMapProjectionNode::cloudCallback, this, std::placeholders::_1));
+    ready_ = buildMap();
+    if (ready_) {
+      publishMap();
+    }
+  }
+
+  bool ready() const
+  {
+    return ready_;
   }
 
 private:
-  void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
+  bool validateParameters()
   {
-    sensor_x_ = msg->pose.pose.position.x;
-    sensor_y_ = msg->pose.pose.position.y;
-    have_odom_ = true;
-  }
-
-  bool toCell(double x, double y, int & mx, int & my) const
-  {
-    mx = static_cast<int>(std::floor((x - origin_x_) / resolution_));
-    my = static_cast<int>(std::floor((y - origin_y_) / resolution_));
-    return mx >= 0 && mx < width_ && my >= 0 && my < height_;
-  }
-
-  size_t index(int mx, int my) const
-  {
-    return static_cast<size_t>(my * width_ + mx);
-  }
-
-  void markFreeRay(int x0, int y0, int x1, int y1)
-  {
-    int dx = std::abs(x1 - x0);
-    int sx = x0 < x1 ? 1 : -1;
-    int dy = -std::abs(y1 - y0);
-    int sy = y0 < y1 ? 1 : -1;
-    int error = dx + dy;
-
-    while (x0 != x1 || y0 != y1) {
-      const auto cell = index(x0, y0);
-      if (grid_.data[cell] != 100) {
-        grid_.data[cell] = 0;
-      }
-      const int twice_error = 2 * error;
-      if (twice_error >= dy) {
-        error += dy;
-        x0 += sx;
-      }
-      if (twice_error <= dx) {
-        error += dx;
-        y0 += sy;
-      }
+    if (pcd_file_.empty()) {
+      RCLCPP_ERROR(get_logger(), "Parameter 'pcd_file' must point to a saved GlobalMap.pcd");
+      return false;
     }
+    if (resolution_ <= 0.0 || z_min_ >= z_max_ || voxel_leaf_size_ <= 0.0 ||
+      radius_search_ <= 0.0 || min_neighbors_ <= 0 || map_padding_ < 0.0 ||
+      unobserved_value_ < -1 || unobserved_value_ > 100)
+    {
+      RCLCPP_ERROR(get_logger(), "Invalid map projection parameters");
+      return false;
+    }
+    return true;
   }
 
-  void cloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+  bool buildMap()
   {
-    pcl::PointCloud<pcl::PointXYZ> cloud;
-    pcl::fromROSMsg(*msg, cloud);
-
-    int sensor_mx = 0;
-    int sensor_my = 0;
-    const bool can_mark_free = mark_free_space_ && have_odom_ &&
-      toCell(sensor_x_, sensor_y_, sensor_mx, sensor_my);
-
-    for (const auto & point : cloud.points) {
-      if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
-        continue;
-      }
-
-      int mx = 0;
-      int my = 0;
-      if (!toCell(point.x, point.y, mx, my)) {
-        continue;
-      }
-
-      if (can_mark_free) {
-        markFreeRay(sensor_mx, sensor_my, mx, my);
-      }
-
-      const auto cell = index(mx, my);
-      if (point.z < obstacle_min_height_ || point.z > obstacle_max_height_) {
-        if (grid_.data[cell] == -1) {
-          grid_.data[cell] = 0;
-        }
-        continue;
-      }
-
-      hits_[cell] = std::min<uint16_t>(hits_[cell] + 1, UINT16_MAX);
-      if (hits_[cell] >= min_hits_) {
-        grid_.data[cell] = 100;
-      }
+    pcl::PointCloud<pcl::PointXYZ>::Ptr source(new pcl::PointCloud<pcl::PointXYZ>);
+    if (pcl::io::loadPCDFile(pcd_file_, *source) < 0) {
+      RCLCPP_ERROR(get_logger(), "Could not load PCD file: %s", pcd_file_.c_str());
+      return false;
     }
 
-    grid_.header.stamp = msg->header.stamp;
-    grid_.header.frame_id = frame_id_.empty() ? msg->header.frame_id : frame_id_;
+    pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
+    voxel_filter.setInputCloud(source);
+    voxel_filter.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr downsampled(new pcl::PointCloud<pcl::PointXYZ>);
+    voxel_filter.filter(*downsampled);
+
+    pcl::PassThrough<pcl::PointXYZ> z_filter;
+    z_filter.setInputCloud(downsampled);
+    z_filter.setFilterFieldName("z");
+    z_filter.setFilterLimits(z_min_, z_max_);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered(new pcl::PointCloud<pcl::PointXYZ>);
+    z_filter.filter(*filtered);
+
+    if (enable_radius_filter_) {
+      pcl::RadiusOutlierRemoval<pcl::PointXYZ> radius_filter;
+      radius_filter.setInputCloud(filtered);
+      radius_filter.setRadiusSearch(radius_search_);
+      radius_filter.setMinNeighborsInRadius(min_neighbors_);
+      pcl::PointCloud<pcl::PointXYZ>::Ptr denoised(new pcl::PointCloud<pcl::PointXYZ>);
+      radius_filter.filter(*denoised);
+      filtered = denoised;
+    }
+
+    if (filtered->empty()) {
+      RCLCPP_ERROR(get_logger(), "No points remain after filtering; check z_min, z_max and filters");
+      return false;
+    }
+
+    double x_min = std::numeric_limits<double>::max();
+    double x_max = std::numeric_limits<double>::lowest();
+    double y_min = std::numeric_limits<double>::max();
+    double y_max = std::numeric_limits<double>::lowest();
+    for (const auto & point : filtered->points) {
+      x_min = std::min(x_min, static_cast<double>(point.x));
+      x_max = std::max(x_max, static_cast<double>(point.x));
+      y_min = std::min(y_min, static_cast<double>(point.y));
+      y_max = std::max(y_max, static_cast<double>(point.y));
+    }
+
+    grid_.info.resolution = resolution_;
+    grid_.info.origin.position.x = x_min - map_padding_;
+    grid_.info.origin.position.y = y_min - map_padding_;
+    grid_.info.origin.orientation.w = 1.0;
+    grid_.info.width = static_cast<uint32_t>(std::ceil(
+      (x_max - x_min + 2.0 * map_padding_) / resolution_));
+    grid_.info.height = static_cast<uint32_t>(std::ceil(
+      (y_max - y_min + 2.0 * map_padding_) / resolution_));
+    grid_.data.assign(
+      static_cast<size_t>(grid_.info.width) * grid_.info.height,
+      static_cast<int8_t>(unobserved_value_));
+
+    for (const auto & point : filtered->points) {
+      const int mx = static_cast<int>(std::floor(
+        (point.x - grid_.info.origin.position.x) / resolution_));
+      const int my = static_cast<int>(std::floor(
+        (point.y - grid_.info.origin.position.y) / resolution_));
+      if (mx >= 0 && mx < static_cast<int>(grid_.info.width) &&
+        my >= 0 && my < static_cast<int>(grid_.info.height))
+      {
+        grid_.data[static_cast<size_t>(my) * grid_.info.width + mx] = 100;
+      }
+    }
+
+    RCLCPP_INFO(
+      get_logger(), "Generated %u x %u map from %zu / %zu PCD points",
+      grid_.info.width, grid_.info.height, filtered->size(), source->size());
+    return true;
+  }
+
+  void publishMap()
+  {
+    grid_.header.stamp = now();
+    grid_.header.frame_id = frame_id_;
     map_pub_->publish(grid_);
   }
 
-  std::string input_topic_;
-  std::string odom_topic_;
+  std::string pcd_file_;
   std::string output_topic_;
   std::string frame_id_;
   double resolution_{};
-  int width_{};
-  int height_{};
-  double origin_x_{};
-  double origin_y_{};
-  double obstacle_min_height_{};
-  double obstacle_max_height_{};
-  int min_hits_{};
-  bool mark_free_space_{};
-  bool have_odom_{false};
-  double sensor_x_{};
-  double sensor_y_{};
+  double z_min_{};
+  double z_max_{};
+  double voxel_leaf_size_{};
+  bool enable_radius_filter_{};
+  double radius_search_{};
+  int min_neighbors_{};
+  double map_padding_{};
+  int unobserved_value_{};
+  bool ready_{false};
 
   nav_msgs::msg::OccupancyGrid grid_;
-  std::vector<uint16_t> hits_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
 };
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<PointcloudMapProjectionNode>());
+  const auto node = std::make_shared<PointcloudMapProjectionNode>();
+  if (!node->ready()) {
+    rclcpp::shutdown();
+    return EXIT_FAILURE;
+  }
+  rclcpp::spin(node);
   rclcpp::shutdown();
-  return 0;
+  return EXIT_SUCCESS;
 }

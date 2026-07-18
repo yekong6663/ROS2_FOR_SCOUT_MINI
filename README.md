@@ -381,18 +381,17 @@ ros2 launch livox_ros_driver2 msg_MID360_launch.py
 
 ## 三维点云投影为 Nav2 二维地图
 
-导航同时保留两类地图：Fast-LIO2 生成的 `.pcd` 三维点云地图用于 ICP 重定位；二维栅格地图用于 Nav2 的全局路径规划。`my_party/map_transformation_ws` 中的 `pointcloud_map_projection` 是本项目自主实现的地图转换包，仅参考了 [SCURM_SentryNavigation](https://github.com/PolarisXQ/SCURM_SentryNavigation) 的“世界系点云投影为二维占据栅格”思路，不依赖或克隆该仓库源码。
+导航同时保留两类地图：Fast-LIO2 生成的 `.pcd` 三维点云地图用于 ICP 重定位；二维栅格地图用于 Nav2 的全局路径规划。`my_party/map_transformation_ws` 中的 `pointcloud_map_projection` 是本项目自主实现的**离线**地图转换包，参考 [pcd2pgm](https://github.com/LihanChen2004/pcd2pgm) 的处理流程，不依赖或克隆外部仓库源码。
 
 投影链路如下：
 
 ```text
-/fastlio2/world_cloud（世界系去畸变点云）
-  + /fastlio2/lio_odom（传感器位置，用于射线清空自由空间）
+GlobalMap.pcd（Fast-LIO2 建图完成后保存）
   → pointcloud_map_projection
-      ├─ 按高度过滤：过滤地面、高空点
-      ├─ 栅格化：障碍物点累积命中
-      └─ 射线投影：已观测但无障碍的位置标为 free
-  → /projected_map（nav_msgs/OccupancyGrid）
+      ├─ 按 Z 高度过滤：保留会影响底盘通行的点
+      ├─ 半径离群点滤波：去除稀疏噪点
+      └─ 自动计算点云边界并栅格化
+  → /map（nav_msgs/OccupancyGrid）
   → map_saver_cli
   → competition_map.pgm + competition_map.yaml
 ```
@@ -401,36 +400,39 @@ ros2 launch livox_ros_driver2 msg_MID360_launch.py
 
 | 参数 | 作用 | 初始值 |
 |---|---|---|
-| `resolution` | 栅格分辨率 | `0.10 m` |
-| `width` / `height` | 栅格尺寸 | `800 × 800`（80 m × 80 m） |
-| `origin_x` / `origin_y` | 地图左下角（Fast-LIO2 `odom` 坐标系） | `-40 m / -40 m` |
-| `obstacle_min_height` / `obstacle_max_height` | 计为障碍的高度范围 | `0.15–1.20 m` |
-| `min_hits` | 栅格成为障碍所需累计点数 | `2` |
-| `mark_free_space` | 是否用点云射线标记自由空间 | `true` |
+| `pcd_file` | 已清理的完整 PCD 地图绝对路径 | 必填 |
+| `resolution` | 栅格分辨率 | `0.05 m` |
+| `z_min` / `z_max` | 保留为障碍的高度范围 | `0.15–1.20 m` |
+| `voxel_leaf_size` | 过滤前体素降采样尺寸 | `0.05 m` |
+| `enable_radius_filter` | 是否启用半径离群点滤波 | `true` |
+| `radius_search` / `min_neighbors` | 去噪邻域参数 | `0.15 m / 3` |
+| `map_padding` | 点云边界外额外保留范围 | `0.50 m` |
+| `unobserved_value` | 未观测栅格的占据值 | `-1`（未知） |
 
 首次编译：
 
 ```bash
+source /opt/ros/humble/setup.bash
 cd /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws
-source install/setup.bash
-colcon build
+colcon build --packages-select pointcloud_map_projection
 ```
 
-启动 Fast-LIO2 后，叠加该工作空间并运行投影节点：
+将 `projection.yaml` 的 `pcd_file` 改为实际地图文件的绝对路径后，运行转换节点：
 
 ```bash
-source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
 source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws/install/setup.bash
 ros2 launch pointcloud_map_projection projection.launch.py
 ```
 
-配置文件为 [`projection.yaml`](my_party/map_transformation_ws/src/pointcloud_map_projection/config/projection.yaml)。高度阈值基于重力对齐后的 Fast-LIO2 世界系；室外有坡时应按实测调整，必要时再增加地面分割。建图阶段投影地图使用 `odom` 坐标系；**不要**静态发布 `map → odom`，比赛运行时该 TF 应由 ICP 重定位节点动态发布。
+配置文件为 [`projection.yaml`](my_party/map_transformation_ws/src/pointcloud_map_projection/config/projection.yaml)。高度阈值基于重力对齐后的 PCD 坐标系；应先用 RViz 检查滤波结果，再保存最终地图。运行时，ICP 重定位节点动态发布 `map → odom`。
 
-安装 `ros-humble-nav2-map-server` 后，生成 `/projected_map` 即可保存为 Nav2 静态地图：
+> 转换器无法仅从障碍物点判断未观测区域是否可通行，因此默认将其标记为 unknown（`-1`）。保存 PGM 后，应在地图编辑器中将确认的赛道区域设为 free，并保留赛道外、遮挡区和边界为 unknown/obstacle；不要直接把所有未知格改为 free。
+
+安装 `ros-humble-nav2-map-server` 后，生成 `/map` 即可保存为 Nav2 静态地图：
 
 ```bash
 ros2 run nav2_map_server map_saver_cli \
-  -t /projected_map \
+  -t /map \
   -f competition_map \
   --fmt png
 ```
