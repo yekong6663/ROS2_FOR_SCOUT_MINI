@@ -1,0 +1,19 @@
+pointcloud_map_projection:
+  ros__parameters:
+    input_topic: /fastlio2/world_cloud
+    odom_topic: /fastlio2/lio_odom
+    output_topic: /projected_map
+    frame_id: odom
+
+    # 80 m × 80 m fixed map.  Set the origin to cover the competition area.
+    resolution: 0.10
+    width: 800
+    height: 800
+    origin_x: -40.0
+    origin_y: -40.0
+
+    # Heights are measured in the gravity-aligned Fast-LIO2 world frame.
+    obstacle_min_height: 0.15
+    obstacle_max_height: 1.20
+    min_hits: 2
+    mark_free_space: true

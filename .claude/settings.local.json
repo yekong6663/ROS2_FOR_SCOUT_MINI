@@ -6,7 +6,10 @@
       "Read(//var/run/**)",
       "Bash(python3 -m json.tool /home/fishros/xxls_devcontainer/SCOUT_MINI/ROS2_FOR_SCOUT_MINI/.devcontainer/devcontainer.json)",
       "Bash(apt-cache search *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(ls -la /home/ros/.vscode-server/data/logs/20260718T094923/exthost1/openai.chatgpt/ 2>/dev/null)",
+      "Read(//home/ros/.vscode-server/data/logs/20260718T094923/exthost1/openai.chatgpt/**)",
+      "Read(//home/ros/.vscode-server/data/logs/20260713T081946/exthost2/openai.chatgpt/**)"
     ]
   }
 }

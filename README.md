@@ -174,6 +174,8 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ```
 键盘控制运行表
 
+---
+
 # 建图SLAM
 
 构建参考开源库：[FASTLIO2_ROS2](https://github.com/liangheming/FASTLIO2_ROS2)（基于 [FAST-LIO2](https://github.com/hku-mars/FAST_LIO) 的 ROS2 重构版）。
@@ -285,7 +287,6 @@ colcon build --packages-select localizer
 colcon build --packages-select pgo
 ```
 
-
 ## 里程计配置
 
 配置文件：[`third_party/fast_lio2_ws/src/FASTLIO2_ROS2/fastlio2/config/lio.yaml`](third_party/fast_lio2_ws/src/FASTLIO2_ROS2/fastlio2/config/lio.yaml)
@@ -377,39 +378,65 @@ ros2 launch livox_ros_driver2 msg_MID360_launch.py
 | `refine_scan_resolution` | 精配准降采样（m） | `0.1` |
 | `rough_score_thresh` | 粗配准得分阈值 | `0.2`（降低放宽匹配）|
 
-## 常见问题
 
-### 编译时内存爆满卡死
+## 三维点云投影为 Nav2 二维地图
 
-```bash
-# 限制并行数 + 分步编译 fast_lio2_ws
-cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws
-colcon build --parallel-workers 1 --packages-select interface
-colcon build --parallel-workers 1 --packages-select fastlio2
-colcon build --parallel-workers 1 --packages-select pgo localizer hba
+导航同时保留两类地图：Fast-LIO2 生成的 `.pcd` 三维点云地图用于 ICP 重定位；二维栅格地图用于 Nav2 的全局路径规划。`my_party/map_transformation_ws` 中的 `pointcloud_map_projection` 是本项目自主实现的地图转换包，仅参考了 [SCURM_SentryNavigation](https://github.com/PolarisXQ/SCURM_SentryNavigation) 的“世界系点云投影为二维占据栅格”思路，不依赖或克隆该仓库源码。
+
+投影链路如下：
+
+```text
+/fastlio2/world_cloud（世界系去畸变点云）
+  + /fastlio2/lio_odom（传感器位置，用于射线清空自由空间）
+  → pointcloud_map_projection
+      ├─ 按高度过滤：过滤地面、高空点
+      ├─ 栅格化：障碍物点累积命中
+      └─ 射线投影：已观测但无障碍的位置标为 free
+  → /projected_map（nav_msgs/OccupancyGrid）
+  → map_saver_cli
+  → competition_map.pgm + competition_map.yaml
 ```
 
-### livox_ros_driver2 编译报错 `Unknown arguments`
+核心代码位于 [`my_party/map_transformation_ws/src/pointcloud_map_projection`](my_party/map_transformation_ws/src/pointcloud_map_projection)。主要参数如下：
 
-`ROS_VERSION` 环境变量未设置。先执行 `source /opt/ros/humble/setup.bash`。
+| 参数 | 作用 | 初始值 |
+|---|---|---|
+| `resolution` | 栅格分辨率 | `0.10 m` |
+| `width` / `height` | 栅格尺寸 | `800 × 800`（80 m × 80 m） |
+| `origin_x` / `origin_y` | 地图左下角（Fast-LIO2 `odom` 坐标系） | `-40 m / -40 m` |
+| `obstacle_min_height` / `obstacle_max_height` | 计为障碍的高度范围 | `0.15–1.20 m` |
+| `min_hits` | 栅格成为障碍所需累计点数 | `2` |
+| `mark_free_space` | 是否用点云射线标记自由空间 | `true` |
 
-### 雷达无话题输出
+首次编译：
 
-1. 检查 `MID360_config.json` IP 是否正确
-2. `ping` 雷达 IP 确认网络通
-3. 防火墙不拦截端口 56100-56500
+```bash
+cd /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws
+source install/setup.bash
+colcon build
+```
 
-### 建图漂移严重
+启动 Fast-LIO2 后，叠加该工作空间并运行投影节点：
 
-1. 确认 IMU 数据正常（`ros2 topic hz /livox/imu`）
-2. 外参是否准确（调整 `t_il`/`r_il`）
-3. 开 `pgo` 回环节点
+```bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws/install/setup.bash
+ros2 launch pointcloud_map_projection projection.launch.py
+```
 
-### 重定位失败
+配置文件为 [`projection.yaml`](my_party/map_transformation_ws/src/pointcloud_map_projection/config/projection.yaml)。高度阈值基于重力对齐后的 Fast-LIO2 世界系；室外有坡时应按实测调整，必要时再增加地面分割。建图阶段投影地图使用 `odom` 坐标系；**不要**静态发布 `map → odom`，比赛运行时该 TF 应由 ICP 重定位节点动态发布。
 
-1. 确认 `map.pcd` 覆盖了当前位置
-2. 降低 `rough_score_thresh` 到 `0.1`
-3. 给定的初始猜测（x, y, z, yaw）不要离真实位置太远
+安装 `ros-humble-nav2-map-server` 后，生成 `/projected_map` 即可保存为 Nav2 静态地图：
+
+```bash
+ros2 run nav2_map_server map_saver_cli \
+  -t /projected_map \
+  -f competition_map \
+  --fmt png
+```
+
+运行时：`competition_map.yaml` 由 Nav2 的 `map_server` 加载，作为全局 costmap；实时点云只用于 local costmap 的障碍物更新。
+
 
 ## 参考链接
 
