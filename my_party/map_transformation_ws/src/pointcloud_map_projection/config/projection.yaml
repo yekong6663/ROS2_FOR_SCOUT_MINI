@@ -1,7 +1,9 @@
 pointcloud_map_projection:
   ros__parameters:
-    # Use the cleaned complete map saved after Fast-LIO2 mapping.
-    pcd_file: /absolute/path/to/GlobalMap.pcd
+    # PGO map and matching keyframe poses. The trajectory is used to mark only
+    # confirmed traversed space as free instead of treating all unknown space as drivable.
+    pcd_file: /workspaces/ROS2_FOR_SCOUT_MINI/maps/indoor_01/map.pcd
+    poses_file: /workspaces/ROS2_FOR_SCOUT_MINI/maps/indoor_01/poses.txt
     output_topic: /map
     frame_id: map
 
@@ -17,6 +19,11 @@ pointcloud_map_projection:
     min_neighbors: 3
     map_padding: 0.50
 
-    # Unobserved space is unsafe by default. Mark confirmed drivable areas as
-    # free during final map review instead of changing this to 0 blindly.
+    # Radius around the interpolated vehicle trajectory marked as free (0).
+    # Keep this no wider than the actually observed drivable corridor.
+    free_space_radius: 0.80
+    # Optional confirmed robot-footprint clearing after obstacle projection.
+    trajectory_clear_radius: 0.0
+
+    # All space outside the trajectory corridor remains unknown and unsafe.
     unobserved_value: -1

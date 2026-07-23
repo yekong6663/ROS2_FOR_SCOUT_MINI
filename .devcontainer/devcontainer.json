@@ -65,6 +65,10 @@
     // 解决"重新打开容器后不在 docker 组"的问题
     "postCreateCommand": "sudo usermod -aG docker $(whoami) 2>/dev/null; echo '已将当前用户加入 docker 组。如果仍提示权限不足，请关闭终端并重新打开（或执行 newgrp docker）'",
 
+    // 每次容器启动时恢复 MID-360 直连网口的静态 IPv4 地址。
+    // 不设置默认网关和 DNS，避免影响 Wi-Fi 联网。
+    "postStartCommand": "if ip link show enp3s0 >/dev/null 2>&1; then sudo -n ip addr replace 192.168.1.50/24 dev enp3s0 && sudo -n ip route replace 192.168.1.0/24 dev enp3s0 src 192.168.1.50 && echo 'MID-360 网口已配置: enp3s0=192.168.1.50/24'; else echo '警告: 未找到 MID-360 网口 enp3s0'; fi",
+
     // ==================== VSCode 自定义 ====================
     "customizations": {
         "vscode": {

@@ -1,9 +1,11 @@
 build/
 install/
 log/
+maps/
 
 比赛规则.pdf
 .codex
 .claude
 .agents
 
+C1965.STEP

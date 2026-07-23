@@ -36,6 +36,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # 清理 apt 缓存，减小镜像体积
     && rm -rf /var/lib/apt/lists/*
 
+# ==================== 安装 Node.js 20 LTS + Claude Code CLI ====================
+# Claude Code CLI 需要 Node.js 18+，使用 NodeSource 官方源安装
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g @anthropic-ai/claude-code \
+    && rm -rf /var/lib/apt/lists/*
+
 # ==================== rosdep 初始化（已注释，按需启用） ====================
 # 下面两行被注释，因为在国内网络环境下 rosdep update 非常慢且容易失败。
 # 如果你需要自动依赖安装，可以取消注释，但建议改用 rosdepc（国内镜像工具）。

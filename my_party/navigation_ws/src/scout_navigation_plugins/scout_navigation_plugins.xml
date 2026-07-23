@@ -1,0 +1,7 @@
+<library path="scout_astar_planner">
+  <class
+    type="scout_navigation_plugins::ScoutAstarPlanner"
+    base_class_type="nav2_core::GlobalPlanner">
+    <description>Scaffold for the Scout Mini A* global planner.</description>
+  </class>
+</library>

@@ -9,7 +9,19 @@
       "Bash(git checkout *)",
       "Bash(ls -la /home/ros/.vscode-server/data/logs/20260718T094923/exthost1/openai.chatgpt/ 2>/dev/null)",
       "Read(//home/ros/.vscode-server/data/logs/20260718T094923/exthost1/openai.chatgpt/**)",
-      "Read(//home/ros/.vscode-server/data/logs/20260713T081946/exthost2/openai.chatgpt/**)"
+      "Read(//home/ros/.vscode-server/data/logs/20260713T081946/exthost2/openai.chatgpt/**)",
+      "Read(//home/ros/.vscode-server/extensions/**)",
+      "Read(//home/ros/.vscode-server/data/logs/20260720T122044/**)",
+      "Read(//home/ros/.vscode-server/data/logs/20260720T122044/exthost4/**)",
+      "Read(//home/ros/.vscode-server/data/logs/20260720T122044/exthost1/**)",
+      "Read(//home/ros/.vscode-server/data/logs/20260720T122044/exthost2/**)",
+      "Bash(netstat -tlnp)",
+      "Read(//proc/11770/**)",
+      "Read(//proc/11770/fd/**)",
+      "Bash(code --version)",
+      "Read(//home/ros/.vscode-server/bin/**)",
+      "Bash(export https_proxy=http://127.0.0.1:7897 http_proxy=http://127.0.0.1:7897)",
+      "Bash(/home/ros/.vscode-server/extensions/openai.chatgpt-26.5715.31925-linux-x64/bin/linux-x86_64/codex --help)"
     ]
   }
 }

@@ -1,0 +1,30 @@
+pointcloud_map_projection:
+  ros__parameters:
+    pcd_file: /workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01/map.pcd
+    poses_file: /workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01/poses.txt
+    patches_dir: /workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01/patches
+    remove_self_points: true
+
+    # Bounds in the FAST-LIO2 body frame. They cover the Scout Mini body and
+    # lidar-visible hardware so those returns do not repeat along the route.
+    self_filter.min_x: -0.65
+    self_filter.max_x: 0.65
+    self_filter.min_y: -0.55
+    self_filter.max_y: 0.55
+    self_filter.min_z: -1.00
+    self_filter.max_z: 0.35
+
+    output_topic: /map
+    frame_id: map
+    resolution: 0.05
+    z_min: 0.15
+    z_max: 1.20
+    voxel_leaf_size: 0.05
+    enable_radius_filter: true
+    radius_search: 0.15
+    min_neighbors: 3
+    map_padding: 0.50
+    free_space_radius: 0.80
+    # Clear only the center swept by the robot; obstacles outside the footprint remain.
+    trajectory_clear_radius: 0.35
+    unobserved_value: -1

@@ -137,7 +137,9 @@ candump can0
 ```
 > 收到 CAN 帧即表示通信正常，可继续下一步启动 ROS2 驱动。
 
-#### 6. 启动底盘 ROS2 驱动（Docker 容器内执行）
+#### 6. 单独测试底盘驱动（可选）
+
+这里只用于确认底盘通信。整套系统运行时不要按本节启动，统一使用文末的[统一使用指南](#统一使用指南)，以确保 TF 参数正确。
 
 ```bash
 # 编译底盘工作空间
@@ -145,7 +147,7 @@ cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws
 colcon build
 source install/setup.bash
 
-# 启动 Scout Mini 底盘驱动
+# 单独测试 Scout Mini 底盘驱动
 ros2 launch scout_base scout_mini_base.launch.py port_name:=can0
 ```
 
@@ -164,7 +166,10 @@ ros2 topic pub --rate 20 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1, y: 
 1. 黄线接入H，蓝线接入L
 2. 黄蓝线需要剥去绝缘层
 
-## 3. 底盘运行测试
+## 3. 底盘单项运动测试
+
+以下命令只用于脱离建图、重定位和导航系统测试底盘；正式运行步骤见文末的[统一使用指南](#统一使用指南)。
+
 执行
 ```bash
 # 开启底盘运动结点
@@ -335,7 +340,8 @@ ping 192.168.1.181
 
 ### Livox 驱动配置
 
-配置文件：[`third_party/fast_lio2_ws/src/livox_ros_driver2/config/MID360_config.json`](third_party/fast_lio2_ws/src/livox_ros_driver2/config/MID360_config.json)
+#### livox_ros_driver
+配置文件：[`third_party/fast_lio2_ws/src/livox_ros_driver2/config/MID360s_config.json`](third_party/fast_lio2_ws/src/livox_ros_driver2/config/MID360s_config.json)
 
 需要修改的字段：
 - `host_net_info` 下 4 个 IP → `192.168.1.50`
@@ -379,74 +385,13 @@ ros2 launch livox_ros_driver2 msg_MID360_launch.py
 | `rough_score_thresh` | 粗配准得分阈值 | `0.2`（降低放宽匹配）|
 
 
-## 三维点云投影为 Nav2 二维地图
-
-导航同时保留两类地图：Fast-LIO2 生成的 `.pcd` 三维点云地图用于 ICP 重定位；二维栅格地图用于 Nav2 的全局路径规划。`my_party/map_transformation_ws` 中的 `pointcloud_map_projection` 是本项目自主实现的**离线**地图转换包，参考 [pcd2pgm](https://github.com/LihanChen2004/pcd2pgm) 的处理流程，不依赖或克隆外部仓库源码。
-
-投影链路如下：
-
-```text
-GlobalMap.pcd（Fast-LIO2 建图完成后保存）
-  → pointcloud_map_projection
-      ├─ 按 Z 高度过滤：保留会影响底盘通行的点
-      ├─ 半径离群点滤波：去除稀疏噪点
-      └─ 自动计算点云边界并栅格化
-  → /map（nav_msgs/OccupancyGrid）
-  → map_saver_cli
-  → competition_map.pgm + competition_map.yaml
-```
-
-核心代码位于 [`my_party/map_transformation_ws/src/pointcloud_map_projection`](my_party/map_transformation_ws/src/pointcloud_map_projection)。主要参数如下：
-
-| 参数 | 作用 | 初始值 |
-|---|---|---|
-| `pcd_file` | 已清理的完整 PCD 地图绝对路径 | 必填 |
-| `resolution` | 栅格分辨率 | `0.05 m` |
-| `z_min` / `z_max` | 保留为障碍的高度范围 | `0.15–1.20 m` |
-| `voxel_leaf_size` | 过滤前体素降采样尺寸 | `0.05 m` |
-| `enable_radius_filter` | 是否启用半径离群点滤波 | `true` |
-| `radius_search` / `min_neighbors` | 去噪邻域参数 | `0.15 m / 3` |
-| `map_padding` | 点云边界外额外保留范围 | `0.50 m` |
-| `unobserved_value` | 未观测栅格的占据值 | `-1`（未知） |
-
-首次编译：
-
-```bash
-source /opt/ros/humble/setup.bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws
-colcon build --packages-select pointcloud_map_projection
-```
-
-将 `projection.yaml` 的 `pcd_file` 改为实际地图文件的绝对路径后，运行转换节点：
-
-```bash
-source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws/install/setup.bash
-ros2 launch pointcloud_map_projection projection.launch.py
-```
-
-配置文件为 [`projection.yaml`](my_party/map_transformation_ws/src/pointcloud_map_projection/config/projection.yaml)。高度阈值基于重力对齐后的 PCD 坐标系；应先用 RViz 检查滤波结果，再保存最终地图。运行时，ICP 重定位节点动态发布 `map → odom`。
-
-> 转换器无法仅从障碍物点判断未观测区域是否可通行，因此默认将其标记为 unknown（`-1`）。保存 PGM 后，应在地图编辑器中将确认的赛道区域设为 free，并保留赛道外、遮挡区和边界为 unknown/obstacle；不要直接把所有未知格改为 free。
-
-安装 `ros-humble-nav2-map-server` 后，生成 `/map` 即可保存为 Nav2 静态地图：
-
-```bash
-ros2 run nav2_map_server map_saver_cli \
-  -t /map \
-  -f competition_map \
-  --fmt png
-```
-
-运行时：`competition_map.yaml` 由 Nav2 的 `map_server` 加载，作为全局 costmap；实时点云只用于 local costmap 的障碍物更新。
-
-
 ## 参考链接
 
 - [FASTLIO2_ROS2](https://github.com/liangheming/FASTLIO2_ROS2)
 - [FAST-LIO2 原版](https://github.com/hku-mars/FAST_LIO)
 - [mid-360 配置教程](https://blog.csdn.net/m0_55117804/article/details/142644882)
 
-## 完整使用流程
+## FAST-LIO2 运行模式说明
 
 下面的流程针对 `third_party/fast_lio2_ws/src/FASTLIO2_ROS2`，使用 Livox MID-360。该仓库包含 5 个 ROS 2 功能包：
 
@@ -458,54 +403,9 @@ ros2 run nav2_map_server map_saver_cli \
 | `localizer` | 将当前点云与已有 PCD 地图配准，完成全局重定位 | 已有地图、需要定位运行时使用 |
 | `hba` | 使用保存的关键帧和位姿离线精化地图 | 建图结束后，可选使用 |
 
-> `pgo_launch.py` 和 `localizer_launch.py` 都会自动启动 `fastlio2`，不要再同时运行 `lio_launch.py`，否则会出现节点名和话题冲突。
+> `pgo_launch.py` 和 `localizer_launch.py` 都会自动启动 `fastlio2`，不要再同时运行 `lio_launch.py`，否则会出现节点名和话题冲突。正式启动命令统一放在文末的[统一使用指南](#统一使用指南)。
 
-### 1. 每个新终端先加载环境
-
-```bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI
-source /opt/ros/humble/setup.bash
-source third_party/fast_lio2_ws/install/setup.bash
-```
-
-如果修改了源码，重新编译并再次加载环境：
-
-```bash
-cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws
-source /opt/ros/humble/setup.bash
-colcon build --symlink-install --parallel-workers 1 \
-  --packages-select interface fastlio2 pgo localizer hba
-source install/setup.bash
-```
-
-### 2. 启动 Livox MID-360
-
-先确认 `livox_ros_driver2/config/MID360_config.json` 中雷达 IP 和本机 IP 正确，然后启动驱动：
-
-```bash
-ros2 launch livox_ros_driver2 msg_MID360_launch.py
-```
-
-另开终端加载环境后检查数据：
-
-```bash
-ros2 topic hz /livox/lidar
-ros2 topic hz /livox/imu
-```
-
-两个话题都有稳定输出后，才能继续运行 FAST-LIO2。默认输入话题定义在 `fastlio2/config/lio.yaml`。
-
-### 3. 选择一种运行模式
-
-#### 模式 A：仅运行 FAST-LIO2 里程计
-
-适用于测试雷达、查看实时轨迹，或者不需要回环优化的场景：
-
-```bash
-ros2 launch fastlio2 lio_launch.py
-```
-
-主要输出：
+FAST-LIO2 的主要输出：
 
 | 输出 | 内容 |
 |------|------|
@@ -514,88 +414,302 @@ ros2 launch fastlio2 lio_launch.py
 | `/fastlio2/body_cloud` | 当前帧去畸变点云，供 PGO 和重定位使用 |
 | `/fastlio2/world_cloud` | 世界坐标系中的点云 |
 
-#### 模式 B：回环建图并保存地图（推荐建图方式）
-
-该 launch 会同时启动 `fastlio2`、`pgo` 和 RViz：
-
-```bash
-ros2 launch pgo pgo_launch.py
-```
-
-驾驶机器人完整覆盖目标区域，并尽量回到经过的位置形成回环。建图结束后另开终端保存：
-
-```bash
-mkdir -p /workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01
-ros2 service call /pgo/save_maps interface/srv/SaveMaps \
-  "{file_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01', save_patches: true}"
-```
-
-保存成功后目录中应包含：
+PGO 保存成功后，地图目录应包含：
 
 ```text
-site_01/
+<地图目录>/
 ├── map.pcd       # 完整地图，供 localizer 使用
 ├── poses.txt     # 关键帧位姿，供 HBA 使用
 └── patches/      # 关键帧点云，供 HBA 使用
 ```
 
-如果以后不需要 HBA，可以把 `save_patches` 设为 `false`，只保存 `map.pcd`；需要地图精化时必须设为 `true`。
+重定位成功后 `localizer` 发布 `map → lidar`；返回 `valid: true` 才能继续导航。HBA 是可选的离线地图精化工具，不在正常运行时启动。
 
-#### 模式 C：载入已有地图进行重定位
+# 导航
 
-先启动 Livox 驱动，再启动重定位；该 launch 会同时启动 `fastlio2`、`localizer` 和 RViz：
+## TF
+
+Nav2 使用唯一坐标链：
+
+```text
+map → lidar → body → base_link
+```
+
+其中 `map → lidar` 由 PGO 或 localizer 发布，`lidar → body` 由 FAST-LIO2 发布。这里的 `lidar` 是 FAST-LIO2 的局部世界坐标系名称，不是额外的雷达安装坐标系；`body` 是 FAST-LIO2 的 IMU 状态坐标系。
+
+MID-360 安装位置由实物测量和 `C1965.STEP` 装配模型共同确认。以四轮几何中心处的 `base_link` 为基准，X 向车头、Y 向左、Z 向上：
+
+```text
+base_link → MID-360 点云原点 O
+x = +0.2183 m
+y =  0.0000 m
+z = +0.1190 m
+roll = pitch = yaw = 0
+```
+
+FAST-LIO2 当前雷达到 IMU 外参为：
+
+```yaml
+t_il: [-0.011, -0.02329, 0.04412]
+r_il: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+```
+
+换算后使用的静态 TF 为：
+
+```text
+body → base_link
+x = -0.2293 m
+y = -0.02329 m
+z = -0.07488 m
+roll = pitch = yaw = 0
+```
+
+静态变换由 [`robot_tf.launch.py`](my_party/navigation_ws/src/scout_navigation_plugins/launch/robot_tf.launch.py) 发布。整套系统中必须关闭底盘驱动的 `odom → base_link` TF，但仍保留 `/odom` 话题，避免 `base_link` 同时存在两个父节点。启动与检查命令见文末的[统一使用指南](#统一使用指南)。
+
+## PCD 转 Nav2 二维栅格地图
+
+`pointcloud_map_projection` 是离线转换工具。FAST-LIO2 的 `map.pcd` 继续用于三维重定位；转换得到的 `nav2_map.png` 和 `nav2_map.yaml` 用于 Nav2 全局规划。比赛运行时不需要反复转换静态地图，实时障碍由局部代价地图处理。
+
+功能包路径：[`my_party/map_transformation_ws/src/pointcloud_map_projection`](my_party/map_transformation_ws/src/pointcloud_map_projection)。
+
+### 1. 准备输入
+
+先使用 `/pgo/save_maps` 保存地图，并确保同一地图目录至少包含：
+
+```text
+map.pcd
+poses.txt
+patches/       # 启用车体自反射过滤时必须存在
+```
+
+`map.pcd`、`poses.txt` 和 `patches/` 必须来自同一次保存，不能混用。转换流程为：
+
+```text
+PCD 或关键帧 patches
+  → 可选：在车体坐标系删除自身反射
+  → 体素降采样
+  → Z 高度过滤
+  → 半径离群点过滤
+  → poses.txt 轨迹走廊标记为空闲
+  → 障碍投影
+  → 可选：清理机器人实际驶过的中心足迹
+  → 发布 /map
+  → map_saver_cli 保存 PNG 和 YAML
+```
+
+### 2. 配置
+
+每张地图单独保存一份 YAML 配置。可以复制 [`projection.yaml`](my_party/map_transformation_ws/src/pointcloud_map_projection/config/projection.yaml)，然后修改其中的绝对路径和参数。
+
+必须设置：
+
+| 参数 | 说明 |
+|---|---|
+| `pcd_file` | PGO 保存的 `map.pcd` 绝对路径 |
+| `poses_file` | 与 PCD 配套的 `poses.txt` 绝对路径 |
+| `patches_dir` | 关键帧目录；仅在 `remove_self_points: true` 时使用 |
+| `output_topic` | 输出二维地图话题，通常为 `/map` |
+| `frame_id` | 地图坐标系，通常为 `map` |
+
+地图与滤波参数：
+
+| 参数 | 当前基准 | 调节方法 |
+|---|---:|---|
+| `resolution` | `0.05 m` | 越小越精细但占用更多内存；大场地可用 `0.05–0.10 m` |
+| `z_min` | `0.15 m` | 地面残留多时增大；低矮锥桶缺失时减小 |
+| `z_max` | `1.20 m` | 树冠、顶棚进入地图时减小；需要保留高障碍时增大 |
+| `voxel_leaf_size` | `0.05 m` | 点云太密或转换太慢时增大，通常不小于 `resolution` |
+| `enable_radius_filter` | `true` | 是否删除孤立噪点 |
+| `radius_search` | `0.15 m` | 稀疏噪点多时适当增大；细杆消失时减小 |
+| `min_neighbors` | `3` | 增大可加强去噪，但可能删除锥桶、细杆等稀疏障碍 |
+| `map_padding` | `0.50 m` | 地图边缘额外留白 |
+| `unobserved_value` | `-1` | 未观测区域保持未知；不要直接改为自由空间 `0` |
+
+自由空间参数：
+
+| 参数 | 当前基准 | 调节方法 |
+|---|---:|---|
+| `free_space_radius` | `0.80 m` | 从轨迹中心向两侧生成自由走廊，应小于确认可通行区域的半宽 |
+| `trajectory_clear_radius` | `0.0 m` | `0` 表示关闭；存在沿轨迹重复的伪障碍时，可从 `0.25–0.35 m` 开始调节 |
+
+`trajectory_clear_radius` 会在障碍投影后强制清空轨迹中心，必须小于等于 `free_space_radius`，并且不得超过机器人实际驶过的安全足迹，否则可能把真实墙体清掉。
+
+车体自反射过滤参数：
+
+| 参数 | 说明 |
+|---|---|
+| `remove_self_points` | 为 `true` 时从 `patches/` 重建地图并过滤车体点 |
+| `self_filter.min_x/max_x` | 车体在 `body` 坐标系中的前后范围 |
+| `self_filter.min_y/max_y` | 车体左右范围 |
+| `self_filter.min_z/max_z` | 车体上下范围 |
+
+包围盒只应覆盖小车实体和雷达可见的安装结构。范围过大会删除靠近车辆的真实障碍。
+
+### 3. 转换结果检查
+
+转换和保存命令统一放在文末的[统一使用指南](#统一使用指南)。只修改 YAML 参数不需要重新编译。
+
+终端出现以下统计表示转换完成：
+
+```text
+Generated ... map from ... points and ... poses: ... free, ... occupied cells
+```
+
+在 RViz 添加 `Map`，话题选择 `/map`：
+
+- 白色：自由空间，Nav2 可以规划通过。
+- 黑色：障碍物。
+- 灰色：未知区域，默认不可通行。
+
+重点检查白色走廊是否连续、墙体是否完整、轨迹中心是否存在周期性黑点。发现问题时只修改 YAML 参数并重新启动转换节点。
+
+成功保存后生成：
+
+```text
+nav2_map.png
+nav2_map.yaml
+```
+
+检查 YAML 中的 `image`、`resolution` 和 `origin`。Nav2 运行时由 `map_server` 加载 `nav2_map.yaml`；`map.pcd` 仍由 FAST-LIO2 localizer 使用，两者必须属于同一套地图坐标系。
+
+# 统一使用指南
+
+前面的章节用于说明安装、配置和参数。本节是整套系统唯一的正式运行顺序。每条长期运行的 launch 命令都应放在独立终端中。
+
+## 1. 首次构建或修改源码后构建
 
 ```bash
+# Scout Mini 底盘驱动
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install --packages-select scout_base
+
+# Livox 驱动、FAST-LIO2、PGO 和重定位
+cd /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install --parallel-workers 1 \
+  --packages-select livox_ros_driver2 interface fastlio2 pgo localizer hba
+
+# PCD 转二维栅格地图
+cd /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install --packages-select pointcloud_map_projection
+
+# TF 和导航插件
+cd /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws
+source /opt/ros/humble/setup.bash
+colcon build --symlink-install --packages-select scout_navigation_plugins
+```
+
+## 2. 建图
+
+终端 1——启动 MID-360s：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+ros2 launch livox_ros_driver2 msg_MID360s_launch.py
+```
+
+终端 2——启动底盘并关闭其 TF 发布：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws/install/setup.bash
+ros2 launch scout_base scout_mini_base.launch.py \
+  port_name:=can0 \
+  publish_odom_tf:=false
+```
+
+终端 3——发布 `body → base_link`：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/install/setup.bash
+ros2 launch scout_navigation_plugins robot_tf.launch.py
+```
+
+终端 4——启动回环建图：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+ros2 launch pgo pgo_launch.py
+```
+
+确认 `/livox/lidar` 和 `/livox/imu` 均有稳定输出后再移动小车。不要同时启动 `lio_launch.py`，因为 `pgo_launch.py` 已包含 FAST-LIO2。
+
+## 3. 保存三维地图
+
+建图完成后保持上述节点运行，另开终端执行：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+export MAP_NAME=site_01  # 每次建图修改为新的地图名
+mkdir -p /workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}
+ros2 service call /pgo/save_maps interface/srv/SaveMaps \
+  "{file_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}', save_patches: true}"
+```
+
+确认目录中存在同一次保存产生的 `map.pcd`、`poses.txt` 和 `patches/`。
+
+## 4. 转换并保存二维地图
+
+先复制并修改地图专用配置，设置 `pcd_file`、`poses_file` 和 `patches_dir`，然后启动转换：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws/install/setup.bash
+export PROJECTION_CONFIG=/workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws/src/pointcloud_map_projection/config/site_01_projection.yaml
+ros2 launch pointcloud_map_projection projection.launch.py \
+  params_file:=${PROJECTION_CONFIG}
+```
+
+在 RViz 确认白色自由空间、黑色障碍和灰色未知区域正确。保持转换节点运行，另开终端保存：
+
+```bash
+source /opt/ros/humble/setup.bash
+export MAP_NAME=site_01  # 与三维地图目录名一致
+ros2 run nav2_map_server map_saver_cli \
+  -t /map \
+  -f /workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}/nav2_map \
+  --fmt png
+```
+
+## 5. 重定位
+
+按“建图”的终端 1～3启动雷达、底盘和静态 TF，但不启动 PGO。终端 4 改为：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
 ros2 launch localizer localizer_launch.py
 ```
 
-另开终端调用重定位服务。`x/y/z/yaw/pitch/roll` 是机器人在地图中的大致初始位姿，角度单位为弧度：
+另开终端输入机器人在地图中的大致初始位姿：
 
 ```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+export MAP_NAME=site_01  # 与保存地图时一致
 ros2 service call /localizer/relocalize interface/srv/Relocalize \
-  "{pcd_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01/map.pcd', x: 0.0, y: 0.0, z: 0.0, yaw: 0.0, pitch: 0.0, roll: 0.0}"
-```
+  "{pcd_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}/map.pcd', x: 0.0, y: 0.0, z: 0.0, yaw: 0.0, pitch: 0.0, roll: 0.0}"
 
-查询重定位结果：
-
-```bash
 ros2 service call /localizer/relocalize_check interface/srv/IsValid "{code: 0}"
 ```
 
-返回 `valid: true` 表示成功。成功后 `localizer` 发布 `map -> lidar` TF；如果失败，应让初始位姿更接近真实位置，或调整 `localizer/config/localizer.yaml` 的配准阈值。
+只有返回 `valid: true` 后才能进入导航。
 
-### 4. 使用 HBA 精化地图（可选）
-
-HBA 不是实时建图节点。它读取 PGO 保存的 `patches/` 和 `poses.txt`，优化关键帧位姿并发布精化点云：
+## 6. 检查 TF
 
 ```bash
-ros2 launch hba hba_launch.py
+source /opt/ros/humble/setup.bash
+ros2 run tf2_ros tf2_echo body base_link
+ros2 run tf2_ros tf2_echo map base_link
+ros2 run tf2_tools view_frames
 ```
 
-另开终端开始精化：
+正确结果为 `map → lidar → body → base_link`。`body → base_link` 固定不变，`map → base_link` 随小车连续变化，`base_link` 只能有一个父节点。
 
-```bash
-ros2 service call /hba/refine_map interface/srv/RefineMap \
-  "{maps_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01'}"
-```
-
-精化结果会发布在 `/hba/map_points`，可在 RViz 中检查。需要保存优化后的位姿时调用：
-
-```bash
-ros2 service call /hba/save_poses interface/srv/SavePoses \
-  "{file_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01/refined_poses.txt'}"
-```
-
-### 5. 推荐的实际顺序
-
-```text
-配置雷达 IP
-  -> 启动 livox_ros_driver2
-  -> 检查 /livox/lidar 和 /livox/imu
-  -> 启动 pgo_launch.py 完成建图
-  -> 调用 /pgo/save_maps 保存 map.pcd、patches 和 poses.txt
-  -> （可选）用 hba 精化地图
-  -> 下次运行启动 localizer_launch.py
-  -> 调用 /localizer/relocalize 加载 map.pcd
-  -> valid: true 后使用 map -> lidar TF 进行全局定位
-```
+当前仓库已经具备地图、重定位、统一 TF 和 A* 全局规划插件，但还没有完整的 Nav2 bringup 与局部代价地图配置；完成这两部分后，才能在 `valid: true` 后直接启动自主导航。
