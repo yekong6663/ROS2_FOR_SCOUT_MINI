@@ -427,6 +427,32 @@ PGO 保存成功后，地图目录应包含：
 
 # 导航
 
+## 当前完成情况与待办
+
+当前已具备二维静态地图、FAST-LIO2 三维重定位、`map → lidar → body → base_link` 的统一 TF 链，以及完整的 Nav2 bringup。导航配置位于 [`scout_navigation_bringup`](my_party/navigation_ws/src/scout_navigation_bringup)：
+
+- `map_server` 加载转换得到的 `nav2_map.yaml`。
+- 全局代价地图使用 `map` 坐标系、静态地图层和膨胀层。
+- 局部滚动代价地图使用 `lidar` 坐标系，将实时 `/fastlio2/body_cloud` 接入体素障碍层。
+- 全局规划暂用 NavFn 的 A* 模式，局部控制使用 Regulated Pure Pursuit。
+- `velocity_smoother` 对导航速度进行限幅和平滑，最终向底盘 `/cmd_vel` 输出。
+
+`ScoutAstarPlanner` 目前仍是插件骨架，`createPlan()` 尚未实现，因此不能加入 `planner_plugins`。当前配置使用已经过启动验证的内置规划器；自定义 A* 属于后续替换项，不影响现阶段实车导航联调。
+
+导航参数基准包括：
+
+| 项目 | 当前值 |
+|---|---|
+| 机器人 footprint | `0.62 m × 0.60 m`，另加 `0.02 m` padding |
+| 最大前进速度 | `0.35 m/s` |
+| 最大倒车速度 | `0.15 m/s` |
+| 最大角速度 | `0.60 rad/s` |
+| 局部地图范围 | `8 m × 8 m` |
+| 实时障碍范围 | 标记 `5 m`，清除 `6 m` |
+| 膨胀半径 | `0.55 m` |
+
+这些是首次低速联调值。正式比赛前必须根据实车外廓、制动距离、点云噪声和赛道宽度调整 [`nav2_params.yaml`](my_party/navigation_ws/src/scout_navigation_bringup/config/nav2_params.yaml)。
+
 ## TF
 
 Nav2 使用唯一坐标链：
@@ -574,7 +600,43 @@ nav2_map.yaml
 
 # 统一使用指南
 
-前面的章节用于说明安装、配置和参数。本节是整套系统唯一的正式运行顺序。每条长期运行的 launch 命令都应放在独立终端中。
+前面的章节用于说明安装、配置和参数。本节是整套系统唯一的正式运行顺序。每条长期运行的 launch 命令都应放在独立终端中；除非步骤明确要求停止，否则该终端要一直保持运行。
+
+`ros2 topic hz` 和 `tf2_echo` 都会持续输出。观察数秒确认正常后按 `Ctrl+C` 只结束当前检查命令，再继续执行下一项。
+
+## 0. 先选择运行模式
+
+整套系统只有三种工作模式，不要把它们混在一起启动：
+
+```text
+建图模式：
+Livox → FAST-LIO2 → PGO → map.pcd / poses.txt / patches
+
+离线地图转换：
+map.pcd / poses.txt / patches → /map → nav2_map.png / nav2_map.yaml
+
+导航模式：
+Livox → FAST-LIO2 → localizer → map→lidar TF
+                                  ↓
+nav2_map.yaml → Nav2 → /cmd_vel → Scout Mini
+                     ↑
+       /fastlio2/body_cloud 实时避障
+```
+
+各节点在不同模式中的要求：
+
+| 节点 | 建图模式 | 离线转换 | 导航模式 |
+|---|---|---|---|
+| Livox 驱动 | 必需 | 不启动 | 必需 |
+| Scout 底盘驱动 | 使用 ROS 控车时必需；原厂遥控器控车时可不启动 | 不启动 | 必需 |
+| `body → base_link` 静态 TF | 建议启动，便于统一显示和提前检查 TF | 不启动 | 必需 |
+| PGO（已包含 FAST-LIO2） | 必需 | 不启动 | 禁止启动 |
+| localizer（已包含 FAST-LIO2） | 禁止启动 | 不启动 | 必需 |
+| `lio_launch.py` | 禁止与 PGO/localizer 同时启动 | 不启动 | 禁止与 localizer 同时启动 |
+| 地图投影节点 | 不启动 | 必需 | 不启动 |
+| Nav2 | 不启动 | 不启动 | 重定位 `valid: true` 后启动 |
+
+> FAST-LIO2/PGO 建图本身只依赖 `/livox/lidar` 和 `/livox/imu`，不使用 Scout 底盘 `/odom`。建图时启动底盘节点只是为了通过 ROS 控制小车移动；若使用原厂遥控器，可以跳过底盘节点。
 
 ## 1. 首次构建或修改源码后构建
 
@@ -595,15 +657,189 @@ cd /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws
 source /opt/ros/humble/setup.bash
 colcon build --symlink-install --packages-select pointcloud_map_projection
 
-# TF 和导航插件
+# TF、Nav2 bringup、导航插件和 Humble lifecycle 兼容 overlay
 cd /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws
 source /opt/ros/humble/setup.bash
-colcon build --symlink-install --packages-select scout_navigation_plugins
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws/install/setup.bash
+colcon build --symlink-install \
+  --packages-select nav2_lifecycle_manager scout_navigation_plugins \
+  scout_navigation_bringup \
+  --cmake-args -DBUILD_TESTING=OFF
 ```
 
-## 2. 建图
+## 一键启动（推荐）
 
-终端 1——启动 MID-360s：
+一键 launch 位于 `scout_navigation_bringup`。每次打开新终端，先按以下顺序加载所有独立工作空间：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/install/setup.bash
+```
+
+### A. 一键启动建图节点
+
+使用原厂遥控器移动小车：
+
+```bash
+ros2 launch scout_navigation_bringup mapping.launch.py
+```
+
+该命令默认一次启动：
+
+```text
+Livox MID-360s 驱动
+FAST-LIO2
+PGO
+body → base_link 静态 TF
+RViz
+```
+
+默认不启动 Scout 底盘驱动。需要使用 `/cmd_vel` 或键盘控制时：
+
+```bash
+ros2 launch scout_navigation_bringup mapping.launch.py \
+  start_base:=true \
+  can_port:=can0
+```
+
+`mapping.launch.py` 只负责启动建图节点，不会自动决定何时保存地图。采集完成后仍需调用 `/pgo/save_maps`，防止误操作覆盖已有地图。
+
+常用可选参数：
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `start_livox` | `true` | 回放 rosbag 时可设为 `false` |
+| `start_base` | `false` | ROS 控车时设为 `true` |
+| `start_robot_tf` | `true` | 发布 `body → base_link` |
+| `start_rviz` | `true` | 无图形界面时设为 `false` |
+| `can_port` | `can0` | Scout SocketCAN 接口 |
+
+### B. 输入地图文件夹，一键生成二维地图
+
+地图文件夹至少需要：
+
+```text
+<map_dir>/
+├── map.pcd
+└── poses.txt
+```
+
+执行：
+
+```bash
+ros2 launch scout_navigation_bringup map_conversion.launch.py \
+  map_dir:=/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01
+```
+
+launch 会自动：
+
+1. 读取 `<map_dir>/map.pcd` 和 `<map_dir>/poses.txt`。
+2. 发布投影后的 `/map`。
+3. 等待地图生成完成。
+4. 在同一目录保存 `nav2_map.png` 和 `nav2_map.yaml`。
+5. 保存成功后自动退出。
+
+若文件夹中有同一次 PGO 保存产生的非空 `patches/`，可以启用车体自反射过滤：
+
+```bash
+ros2 launch scout_navigation_bringup map_conversion.launch.py \
+  map_dir:=/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01 \
+  remove_self_points:=true
+```
+
+转换参数集中在 [`map_projection_params.yaml`](my_party/navigation_ws/src/scout_navigation_bringup/config/map_projection_params.yaml)。
+
+### C. 准备自动初始化位姿
+
+导航 launch 会自动读取 `<map_dir>/initial_pose.yaml`。可以复制模板：
+
+```bash
+cp /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/scout_navigation_bringup/config/initial_pose_example.yaml \
+  /workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01/initial_pose.yaml
+```
+
+然后填写机器人每次启动时在 `map` 中的大致位姿，角度单位为弧度：
+
+```yaml
+initial_pose:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  yaw: 0.0
+  pitch: 0.0
+  roll: 0.0
+```
+
+如果文件不存在，launch 会发出警告并使用命令行位姿参数，默认全零。例如：
+
+```bash
+ros2 launch scout_navigation_bringup navigation_system.launch.py \
+  map_dir:=/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01 \
+  initial_x:=1.0 \
+  initial_y:=2.0 \
+  initial_yaw:=1.57
+```
+
+### D. 只输入地图文件夹，一键启动导航
+
+准备好的完整地图目录为：
+
+```text
+<map_dir>/
+├── map.pcd             # localizer 三维重定位
+├── poses.txt           # 二维地图转换输入
+├── patches/            # 可选，自反射过滤输入
+├── nav2_map.png        # Nav2 二维地图
+├── nav2_map.yaml       # Nav2 map_server 输入
+└── initial_pose.yaml   # 推荐，自动初始化位姿
+```
+
+启动命令只需指定文件夹：
+
+```bash
+ros2 launch scout_navigation_bringup navigation_system.launch.py \
+  map_dir:=/workspaces/ROS2_FOR_SCOUT_MINI/maps/site_01
+```
+
+launch 会按顺序完成：
+
+```text
+启动 Livox + Scout 底盘（publish_odom_tf=false）+ 静态 TF
+                            ↓
+启动 FAST-LIO2 + localizer
+                            ↓
+读取 map.pcd 和 initial_pose.yaml，自动调用重定位服务
+                            ↓
+轮询 /localizer/relocalize_check
+                            ↓
+valid: true ──→ 读取 nav2_map.yaml 并启动 Nav2 + RViz
+valid: false/超时 ──→ 禁止启动 Nav2 并关闭本次 launch
+```
+
+常用参数：
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `can_port` | `can0` | Scout SocketCAN 接口 |
+| `start_livox` | `true` | 外部已启动雷达时设为 `false` |
+| `start_base` | `true` | 外部已启动底盘时设为 `false` |
+| `start_localization` | `true` | 外部已有 FAST-LIO2/localizer 时设为 `false` |
+| `start_rviz` | `true` | 无图形界面时设为 `false` |
+| `start_nav2` | `true` | 只测试自动重定位时可设为 `false` |
+| `relocalization_timeout` | `120.0` | 等待有效重定位的最长秒数 |
+
+以下章节保留分终端启动方式，用于理解数据流和定位故障。
+
+## 2. 建图（手动分终端）
+
+### 2.1 启动建图节点
+
+终端 1（必需，持续运行）——启动 MID-360s：
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -611,7 +847,16 @@ source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.ba
 ros2 launch livox_ros_driver2 msg_MID360s_launch.py
 ```
 
-终端 2——启动底盘并关闭其 TF 发布：
+继续前先检查：
+
+```bash
+ros2 topic hz /livox/lidar
+ros2 topic hz /livox/imu
+```
+
+两个话题都必须稳定更新。
+
+终端 2（按移动方式选择）——如果通过 ROS 控制小车，启动底盘并关闭其 TF 发布：
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -621,7 +866,9 @@ ros2 launch scout_base scout_mini_base.launch.py \
   publish_odom_tf:=false
 ```
 
-终端 3——发布 `body → base_link`：
+`publish_odom_tf:=false` 不能省略，否则底盘的 `odom → base_link` 会与 FAST-LIO2 TF 链冲突。使用原厂遥控器移动小车时，建图阶段可以完全跳过终端 2。
+
+终端 3（建议，持续运行）——发布 `body → base_link`：
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -629,7 +876,7 @@ source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/install/setup.bash
 ros2 launch scout_navigation_plugins robot_tf.launch.py
 ```
 
-终端 4——启动回环建图：
+终端 4（必需，持续运行）——启动回环建图：
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -637,11 +884,33 @@ source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.ba
 ros2 launch pgo pgo_launch.py
 ```
 
-确认 `/livox/lidar` 和 `/livox/imu` 均有稳定输出后再移动小车。不要同时启动 `lio_launch.py`，因为 `pgo_launch.py` 已包含 FAST-LIO2。
+`pgo_launch.py` 已包含 FAST-LIO2，禁止再启动 `lio_launch.py` 或 localizer。
+
+继续前检查：
+
+```bash
+ros2 topic hz /fastlio2/lio_odom
+ros2 topic hz /fastlio2/body_cloud
+```
+
+两个话题都稳定更新后才能移动小车。
+
+### 2.2 移动小车采集地图
+
+- 使用原厂遥控器：直接低速、平稳地移动小车。
+- 使用 ROS 键盘控制：保持终端 2 运行，另开终端执行：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws/install/setup.bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+采集时应覆盖所有计划通行区域，并尽量回到已经经过的位置形成闭环。避免急加速、剧烈旋转、碰撞和长时间停留在缺少几何特征的位置。
 
 ## 3. 保存三维地图
 
-建图完成后保持上述节点运行，另开终端执行：
+建图完成后至少保持终端 1 和终端 4 运行，另开终端执行：
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -652,11 +921,17 @@ ros2 service call /pgo/save_maps interface/srv/SaveMaps \
   "{file_path: '/workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}', save_patches: true}"
 ```
 
-确认目录中存在同一次保存产生的 `map.pcd`、`poses.txt` 和 `patches/`。
+只有服务调用成功，并确认目录中存在同一次保存产生的 `map.pcd`、`poses.txt` 和非空 `patches/` 后，才能停止建图节点：
+
+```bash
+ls -lh /workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}/map.pcd
+ls -lh /workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}/poses.txt
+find /workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}/patches -type f | head
+```
 
 ## 4. 转换并保存二维地图
 
-先复制并修改地图专用配置，设置 `pcd_file`、`poses_file` 和 `patches_dir`，然后启动转换：
+本步骤完全离线执行，Livox、底盘、PGO、localizer 和 Nav2 都不需要运行。先复制并修改地图专用配置，确保 `pcd_file`、`poses_file` 和 `patches_dir` 指向同一个地图目录，然后启动转换：
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -677,9 +952,27 @@ ros2 run nav2_map_server map_saver_cli \
   --fmt png
 ```
 
+只有生成以下两个文件并在 RViz 中确认地图正确后，才能进入导航模式：
+
+```text
+maps/site_01/nav2_map.png
+maps/site_01/nav2_map.yaml
+```
+
 ## 5. 重定位
 
-按“建图”的终端 1～3启动雷达、底盘和静态 TF，但不启动 PGO。终端 4 改为：
+导航模式需要四个长期运行的终端：
+
+| 终端 | 节点 | 要求 |
+|---|---|---|
+| 1 | Livox 驱动 | 与建图终端 1 相同 |
+| 2 | Scout 底盘驱动 | 必须启动，并设置 `publish_odom_tf:=false` |
+| 3 | `body → base_link` 静态 TF | 必须启动 |
+| 4 | localizer | 必须启动；不要同时启动 PGO 或 `lio_launch.py` |
+
+先按建图章节中的命令启动终端 1、2、3。这里不能因为使用原厂遥控器而跳过底盘节点，因为 Nav2 最终需要通过它向 Scout Mini 执行 `/cmd_vel`。
+
+终端 4（持续运行）——启动 localizer：
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -687,7 +980,7 @@ source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.ba
 ros2 launch localizer localizer_launch.py
 ```
 
-另开终端输入机器人在地图中的大致初始位姿：
+localizer 已包含 FAST-LIO2，禁止再启动 `pgo_launch.py` 或 `lio_launch.py`。等待 `/fastlio2/lio_odom` 和 `/fastlio2/body_cloud` 稳定输出后，另开一次性命令终端，输入机器人在地图中的大致初始位姿：
 
 ```bash
 source /opt/ros/humble/setup.bash
@@ -699,7 +992,7 @@ ros2 service call /localizer/relocalize interface/srv/Relocalize \
 ros2 service call /localizer/relocalize_check interface/srv/IsValid "{code: 0}"
 ```
 
-只有返回 `valid: true` 后才能进入导航。
+若返回 `valid: false`，检查 PCD 路径、初始位置和 yaw 是否合理，重新调用 `/localizer/relocalize`。只有返回 `valid: true` 后才能进入下一步；终端 1～4 必须继续运行。
 
 ## 6. 检查 TF
 
@@ -710,6 +1003,95 @@ ros2 run tf2_ros tf2_echo map base_link
 ros2 run tf2_tools view_frames
 ```
 
-正确结果为 `map → lidar → body → base_link`。`body → base_link` 固定不变，`map → base_link` 随小车连续变化，`base_link` 只能有一个父节点。
+正确结果为：
 
-当前仓库已经具备地图、重定位、统一 TF 和 A* 全局规划插件，但还没有完整的 Nav2 bringup 与局部代价地图配置；完成这两部分后，才能在 `valid: true` 后直接启动自主导航。
+```text
+map → lidar → body → base_link
+```
+
+验收条件：
+
+- `body → base_link` 数值固定。
+- `map → base_link` 能持续输出，小车移动时连续变化。
+- `base_link` 只能有 `body` 一个父节点。
+- TF 树中不应出现底盘发布的 `odom → base_link`。
+
+任一条件不满足都不能启动 Nav2。
+
+## 7. 启动 Nav2
+
+此时以下长期运行节点必须仍然存在：
+
+```text
+Livox 驱动
+Scout 底盘驱动（publish_odom_tf=false）
+body → base_link 静态 TF
+localizer（包含 FAST-LIO2）
+```
+
+启动前逐项检查：
+
+```bash
+ros2 topic hz /fastlio2/body_cloud
+ros2 topic hz /fastlio2/lio_odom
+ros2 topic hz /odom
+ros2 run tf2_ros tf2_echo map base_link
+```
+
+全部正常，并且重定位已经返回 `valid: true` 后，终端 5（持续运行）启动 Nav2：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/install/setup.bash
+export MAP_NAME=site_01
+ros2 launch scout_navigation_bringup navigation.launch.py \
+  map:=/workspaces/ROS2_FOR_SCOUT_MINI/maps/${MAP_NAME}/nav2_map.yaml
+```
+
+必须 source 导航工作空间，因为其中包含针对当前 Humble `diagnostic_updater` ABI 重新编译的 `nav2_lifecycle_manager` overlay。启动成功时应看到两个 lifecycle manager 都输出：
+
+```text
+Managed nodes are active
+```
+
+## 8. 导航前检查与发送目标
+
+首次实车测试先架空车轮或把最大速度降到 `0.10 m/s`，确认没有其他节点同时发布 `/cmd_vel`。检查：
+
+```bash
+ros2 lifecycle get /map_server
+ros2 lifecycle get /planner_server
+ros2 lifecycle get /controller_server
+ros2 topic hz /fastlio2/body_cloud
+ros2 topic info /cmd_vel --verbose
+```
+
+前三个节点均应为 `active`。在 RViz 中：
+
+1. Fixed Frame 设为 `map`。
+2. 添加 `Map`、`Global Costmap`、`Local Costmap` 和 `PointCloud2`。
+3. 确认局部代价地图能标记实时障碍，且机器人 footprint 方向、尺寸正确。
+4. 使用 `Nav2 Goal` 发送近距离、无遮挡目标。
+
+先完成直线、原地转向、绕静态障碍和动态障碍停车测试，再逐步提高速度。若局部地图没有实时障碍、TF 跳变、重定位失效或出现多个 `/cmd_vel` 发布者，立即停止导航并排查。
+
+## 9. 停止顺序与异常处理
+
+正常停止时：
+
+1. 先停止 Nav2，确保不再生成运动指令。
+2. 停止键盘控制或其他 `/cmd_vel` 发布者。
+3. 停止 localizer/PGO。
+4. 停止底盘节点。
+5. 最后停止 Livox 和静态 TF。
+
+紧急情况下先使用硬件急停或原厂遥控器接管，然后停止 Nav2。不要依赖关闭 RViz 来停车，因为 RViz 不是 `/cmd_vel` 执行节点。
+
+以下任一情况出现时禁止继续发送目标：
+
+- localizer 返回 `valid: false`，或 `map → base_link` 消失/跳变。
+- `/fastlio2/body_cloud` 停止更新，局部代价地图无法标记实时障碍。
+- `/odom` 停止更新。
+- `/cmd_vel` 存在非预期的多个发布者。
+- Nav2 lifecycle 节点不是 `active`。
+- 地图、机器人位置、方向或 footprint 明显不正确。

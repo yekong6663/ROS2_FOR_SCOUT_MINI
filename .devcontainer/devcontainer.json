@@ -53,7 +53,12 @@
         "DISPLAY": ":0",               // 告诉 GUI 程序使用哪个显示器（:0 表示第一个显示器）
                                        // 在 WSL2 或 Linux 下通常为 :0
         "QT_X11_NO_MITSHM": "1",       // 禁用 Qt 的 MIT-SHM 扩展，解决某些 X11 环境下的图形崩溃问题
-        "ROS_DOMAIN_ID": "0"           // ROS 2 域 ID，用于隔离不同 ROS 2 系统（多机器人时修改）
+        "ROS_DOMAIN_ID": "0",          // ROS 2 域 ID，用于隔离不同 ROS 2 系统（多机器人时修改）
+        "http_proxy": "http://127.0.0.1:7897",
+        "https_proxy": "http://127.0.0.1:7897",
+        "HTTP_PROXY": "http://127.0.0.1:7897",
+        "HTTPS_PROXY": "http://127.0.0.1:7897",
+        "NO_PROXY": "localhost,127.0.0.1,::1"
     },
 
     // ==================== 生命周期钩子（已注释） ====================
@@ -98,20 +103,21 @@
             },
             // 自动安装的 VSCode 扩展（在容器内安装，不影响宿主机）
             "extensions": [
-                "dotjoshjohnson.xml",                    // XML 语法高亮
-                "ms-azuretools.vscode-docker",          // Docker 管理
-                "ms-iot.vscode-ros",                    // ROS 消息语法高亮、roscore 状态等
-                "ms-python.python",                     // Python 支持
-                "ms-vscode.cpptools",                   // C/C++ 基础支持
-                "ms-vscode.cpptools-extension-pack",    // C/C++ 扩展包
-                "ms-vscode.cmake-tools",                // CMake 集成
-                "redhat.vscode-yaml",                   // YAML 语法（参数文件、launch 文件）
-                "smilerobotics.urdf",                   // URDF 模型文件语法高亮及预览
-                "streetsidesoftware.code-spell-checker", // 拼写检查
-                "twxs.cmake",                           // CMake 语法高亮
-                "yzhang.markdown-all-in-one",           // Markdown 增强
-                "github.vscode-github-actions",          // GitHub Actions 支持
-                "anthropic.claude-code" 
+                "dotjoshjohnson.xml",
+                "ms-azuretools.vscode-docker",
+                "ms-iot.vscode-ros",
+                "ms-python.python",
+                "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cmake-tools",
+                "redhat.vscode-yaml",
+                "smilerobotics.urdf",
+                "streetsidesoftware.code-spell-checker",
+                "twxs.cmake",
+                "yzhang.markdown-all-in-one",
+                "github.vscode-github-actions",
+                "anthropic.claude-code",
+                "openai.chatgpt"
             ]
         }
     }
