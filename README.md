@@ -432,7 +432,7 @@ PGO 保存成功后，地图目录应包含：
 当前已具备二维静态地图、FAST-LIO2 三维重定位、`map → lidar → body → base_link` 的统一 TF 链，以及完整的 Nav2 bringup。导航配置位于 [`scout_navigation_bringup`](my_party/navigation_ws/src/scout_navigation_bringup)：
 
 - `map_server` 加载转换得到的 `nav2_map.yaml`。
-- 全局代价地图使用 `map` 坐标系、静态地图层和膨胀层。
+- 全局代价地图使用 `map` 坐标系、静态地图层、实时障碍层和膨胀层。
 - 局部滚动代价地图使用 `lidar` 坐标系，将实时 `/fastlio2/body_cloud` 接入体素障碍层。
 - 全局规划暂用 NavFn 的 A* 模式，局部控制使用 Regulated Pure Pursuit。
 - `velocity_smoother` 对导航速度进行限幅和平滑，最终向底盘 `/cmd_vel` 输出。
@@ -443,15 +443,106 @@ PGO 保存成功后，地图目录应包含：
 
 | 项目 | 当前值 |
 |---|---|
-| 机器人 footprint | `0.62 m × 0.60 m`，另加 `0.02 m` padding |
-| 最大前进速度 | `0.35 m/s` |
-| 最大倒车速度 | `0.15 m/s` |
+| 机器人 footprint | `0.62 m × 0.45 m`，另加 `0.02 m` padding |
+| 当前导航期望前进速度 | `0.10 m/s` |
+| 速度平滑器前进上限 | `0.35 m/s` |
+| 速度平滑器倒车上限 | `0.15 m/s`（当前控制器禁止倒车） |
 | 最大角速度 | `0.60 rad/s` |
+| 控制频率 | `10 Hz`（与约 `10 Hz` 的实时点云匹配） |
 | 局部地图范围 | `8 m × 8 m` |
 | 实时障碍范围 | 标记 `5 m`，清除 `6 m` |
-| 膨胀半径 | `0.55 m` |
+| 全局/局部膨胀半径（室内基准） | `0.35 m` |
 
-这些是首次低速联调值。正式比赛前必须根据实车外廓、制动距离、点云噪声和赛道宽度调整 [`nav2_params.yaml`](my_party/navigation_ws/src/scout_navigation_bringup/config/nav2_params.yaml)。
+其中 `desired_linear_vel` 才是控制器正常跟踪路径时的目标速度；`velocity_smoother.max_velocity` 只是最终的硬限幅，不能单独提高它来提速。这些是首次低速联调值。正式比赛前必须根据实车外廓、制动距离、点云噪声和赛道宽度调整 [`nav2_params.yaml`](my_party/navigation_ws/src/scout_navigation_bringup/config/nav2_params.yaml)。
+
+## 沿车道行驶与实车调参
+
+这里的“沿车道”是指小车沿车道中心平滑前进，车道弯曲时路径也随之弯曲；不是简单地从起点到终点画一条直线。当前 Nav2 的工作分工为：
+
+```text
+静态地图中的墙、护栏或锥桶边界
+              ↓
+全局规划器生成车道内路径（弯道也会反映在路径中）
+              ↓
+RPP 控制器跟踪路径
+              ↓
+实时 /fastlio2/body_cloud 发现临时障碍并触发减速、绕行或重规划
+```
+
+### 先确认车道在地图中的表达方式
+
+- **实体边界车道**：车道两侧是墙、护栏、路沿或锥桶，且已出现在 `nav2_map` 中。当前“NavFn A* + RPP + 膨胀层”即可使用；两侧障碍的膨胀代价会使路径倾向于车道中部。
+- **地面油漆线车道**：激光雷达通常不能稳定识别油漆线，且地图转换的 `z_min` 会滤除接近地面的点。因此当前方案不知道车道线的位置，不能保证严格平行或居中。若比赛要求严格循线，需要额外接入相机车道线识别，或预先录制/配置车道中心线航点；只更换全局规划器不能解决这一问题。
+
+### 调参顺序
+
+每次只修改一组参数、重新启动导航并记录结果。先在空旷直道、再在弯道、最后在有临时障碍的车道测试；未验证前不要提速。
+
+1. **确认地图与路径**：在 RViz 中检查 `nav2_map` 的车道边界是否连续，并观察全局路径是否落在车道中部。若路径贴近一侧，先检查地图投影质量和机器人 footprint，再调膨胀层；不要先改控制器。
+2. **低速跟踪**：保持 `desired_linear_vel: 0.10`。观察直道是否摆动、弯道是否切弯或贴边，以及机器人是否能停在目标附近。
+3. **调 RPP 前瞻距离**：当前启用了 `use_velocity_scaled_lookahead_dist: true`，实际前瞻距离为 `速度 × lookahead_time`，再限制到 `min_lookahead_dist` 与 `max_lookahead_dist` 之间。因此当前低速下实际使用 `0.30 m` 的最小前瞻，`lookahead_dist: 0.20` 不生效，可保留为说明值或删除以免误解。
+4. **验证实时避障**：在路径前方放置固定障碍物，RViz 中同时观察 `/fastlio2/body_cloud` 与 local costmap；确认障碍被标记、移开后被清除，小车会减速或重新规划。
+5. **逐级提速**：仅在每一级速度都能稳定完成直道、弯道和避障后，再把 `desired_linear_vel` 按 `0.10 → 0.20 → 0.30 → 0.35 m/s` 调高。`desired_linear_vel` 不得高于 `velocity_smoother.max_velocity[0]`。
+
+### 症状到参数的对应关系
+
+| 实车现象 | 优先检查/调整 | 调整方向 |
+|---|---|---|
+| 弯道切向内侧、离边界太近 | `inflation_radius`、地图边界、footprint | 先确认实体边界完整；仍贴边时小幅增大 `inflation_radius` |
+| 路径居中但车身左右摆动 | `min_lookahead_dist`、`lookahead_time` | 小幅增大前瞻会更平稳，但过大会在急弯切弯 |
+| 弯道跟不上或明显切弯 | `min_lookahead_dist`、速度 | 先降低 `desired_linear_vel`，再小幅减小前瞻；不要低于定位和控制噪声可承受范围 |
+| 靠近障碍不减速或不绕行 | `/fastlio2/body_cloud`、VoxelLayer、高度/距离范围、TF | 先在 RViz 确认点云和 local costmap 中有障碍，再调整 `min_obstacle_height`、`obstacle_max_range` 等参数 |
+| 障碍移走后仍认为被占用 | `clearing`、`raytrace_max_range`、点云更新 | 确认 `clearing: true` 和点云持续更新；必要时检查雷达遮挡与 TF 时间戳 |
+| 反复原地旋转、无法脱困 | 默认恢复行为和局部障碍地图 | 先保留低速并记录日志；确认默认 `spin/backup/wait` 的触发原因后，再定制行为树，避免盲目增加恢复动作 |
+
+### 室内与室外代价地图基准
+
+代价地图由两部分组成，不能混为一谈：
+
+```text
+全局代价地图（map）
+  nav2_map.png 的固定墙体、护栏、锥桶等 → 全局路径选择
+
+局部代价地图（lidar，8 m × 8 m 滚动窗口）
+  /fastlio2/body_cloud 的人员、推车等实时点云 → 减速、绕行、重规划
+```
+
+当前配置的全局图使用 `StaticLayer + ObstacleLayer + InflationLayer`，局部图使用 `VoxelLayer + InflationLayer`。两张代价地图都订阅 `/fastlio2/body_cloud`：全局 `ObstacleLayer` 让规划器绕开当前探测到的障碍，局部 `VoxelLayer` 负责近距离三维碰撞检查。障碍标记范围为 `0.25–5.0 m`、射线清除范围为 `0.25–6.0 m`；`clearing: true` 且 `observation_persistence: 0.0`，因此临时人员离开雷达视野后不会长期留在代价地图。保存的二维静态地图仍不应写入人员等动态物体，见下文的人工清图说明。
+
+#### 先按真实最外廓设置 footprint
+
+`footprint` 必须覆盖车轮、保险杠、雷达支架等平面投影下的最外侧结构，不能只量车壳。若实车最终确认长度约 `0.62 m`、宽度约 `0.45 m`，可先使用：
+
+```yaml
+footprint: "[[0.31, 0.225], [0.31, -0.225],
+            [-0.31, -0.225], [-0.31, 0.225]]"
+footprint_padding: 0.02
+```
+
+这样碰撞检查外廓约为 `0.66 m × 0.49 m`。当前配置使用 `0.62 m × 0.60 m` footprint 加 padding，即约 `0.66 m × 0.64 m`，在确认车宽确实仅为约 `0.45 m` 后显得过宽；修改前仍须以实车最宽点复测为准。
+
+`inflation_radius` 是障碍周围的**软代价区半径**，不是再给机器人硬加同等宽度。代价从障碍向外按 `cost_scaling_factor` 衰减；半径过大时，狭窄车道两侧的高代价区会重叠，导致路径过分贴中、无法绕行，甚至无路径。
+
+#### 起始参数
+
+| 场景 | 全局膨胀层 | 局部膨胀层 | 局部点云范围 | 使用原则 |
+|---|---:|---:|---|---|
+| 室内窄楼道/固定赛道 | `0.35 m` | `0.35 m` | 标记 `5 m`、清除 `6 m`、窗口 `8 × 8 m` | 优先保证车道仍存在连续低代价通路；适合当前 `0.10–0.35 m/s` 低速联调。 |
+| 室外开阔场地/更高速度 | `0.40–0.45 m` | `0.45–0.50 m` | 速度提高或视距足够时，可增至标记 `7 m`、清除 `8 m`、窗口 `12 × 12 m` | 为定位误差、制动距离和动态人员留出更大安全余量；只在宽阔区域使用。 |
+
+两种场景都可先保持：
+
+```yaml
+cost_scaling_factor: 3.0
+```
+
+该值增大时，代价从障碍向外衰减更快；减小时，高代价区会延伸得更远。先调整 `footprint` 和 `inflation_radius`，只有在路径仍明显贴边或过度保守时才微调此值。
+
+对于本项目的室内地图，当前 `0.55 m` 膨胀半径偏保守。推荐先将**全局和局部**的 `inflation_radius` 同时改为 `0.35 m`，以 `0.10 m/s` 测试直道、弯道、人员临时遮挡；确认碰撞余量充足后再提速。若车道两侧是人员而非墙体，应宁可降低速度或停车，也不要为了通行继续减小局部膨胀半径。
+
+在 RViz 中同时显示 `/map`、`global_costmap/costmap`、`local_costmap/costmap` 和 `/fastlio2/body_cloud`：只有在两张 costmap 都存在连续通路时才发送目标；局部图中出现人员时允许短暂绕行，人员离开后应恢复到全局车道中心路径。
+
+`SmacHybrid` 的作用是让全局路径满足车辆转弯运动学约束、减少尖角；它不能识别地面车道线，也不是首次实车联调的前置条件。只有在现有地图边界清楚、RPP 已调稳后，仍出现窄弯不可通过或路径转弯不可执行时，再评估迁移到 Smac 系列规划器。
 
 ## TF
 
@@ -494,7 +585,7 @@ roll = pitch = yaw = 0
 
 ## PCD 转 Nav2 二维栅格地图
 
-`pointcloud_map_projection` 是离线转换工具。FAST-LIO2 的 `map.pcd` 继续用于三维重定位；转换得到的 `nav2_map.png` 和 `nav2_map.yaml` 用于 Nav2 全局规划。比赛运行时不需要反复转换静态地图，实时障碍由局部代价地图处理。
+`pointcloud_map_projection` 是离线转换工具。FAST-LIO2 的 `map.pcd` 继续用于三维重定位；转换得到的 `nav2_map.png` 和 `nav2_map.yaml` 用于 Nav2 全局规划。比赛运行时不需要反复转换静态地图；实时障碍会进入全局与局部代价地图，但不会写回静态地图文件。
 
 功能包路径：[`my_party/map_transformation_ws/src/pointcloud_map_projection`](my_party/map_transformation_ws/src/pointcloud_map_projection)。
 
@@ -556,7 +647,7 @@ PCD 或关键帧 patches
 | 参数 | 当前基准 | 调节方法 |
 |---|---:|---|
 | `free_space_radius` | `0.80 m` | 从轨迹中心向两侧生成自由走廊，应小于确认可通行区域的半宽 |
-| `trajectory_clear_radius` | `0.0 m` | `0` 表示关闭；存在沿轨迹重复的伪障碍时，可从 `0.25–0.35 m` 开始调节 |
+| `trajectory_clear_radius` | `0.35 m` | 障碍投影后清理已确认轨迹中心的伪障碍；不得超过实际安全可通行范围 |
 
 `trajectory_clear_radius` 会在障碍投影后强制清空轨迹中心，必须小于等于 `free_space_radius`，并且不得超过机器人实际驶过的安全足迹，否则可能把真实墙体清掉。
 
@@ -597,6 +688,40 @@ nav2_map.yaml
 ```
 
 检查 YAML 中的 `image`、`resolution` 和 `origin`。Nav2 运行时由 `map_server` 加载 `nav2_map.yaml`；`map.pcd` 仍由 FAST-LIO2 localizer 使用，两者必须属于同一套地图坐标系。
+
+### 4. 人员残留的人工清图（推荐的短期处理）
+
+建图时出现的人员、移动推车等动态物体会残留在 `map.pcd`，并在投影后变成 `nav2_map.png` 中的黑色障碍。对于数量少、位置明确且已确认无真实障碍的残留，推荐**人工清理二维栅格地图**，而不是直接修改三维点云：
+
+```text
+map.pcd        三维重定位参考图；不要手工修改
+nav2_map.png   Nav2 全局规划图；只清理已确认的人员黑块
+/fastlio2/body_cloud
+               实时局部避障；比赛中出现的人员仍会被检测和绕开
+```
+
+操作步骤：
+
+1. 停止导航，备份二维地图：
+
+   ```bash
+   cd /workspaces/ROS2_FOR_SCOUT_MINI/maps/<map_dir>
+   cp nav2_map.png nav2_map.before_manual_cleanup.png
+   ```
+
+2. 使用 GIMP 打开 `nav2_map.png`：
+
+   ```bash
+   gimp nav2_map.png
+   ```
+
+3. 放大后选用硬边画笔（`Hardness 100`），前景色设为纯白 `#FFFFFF`；仅把确认由人员留下的**黑色**点或块涂成白色。
+4. 保持灰色未知区域不变，不要裁剪、缩放、旋转图片，也不要清除墙体、护栏、锥桶等真实障碍。
+5. 保存覆盖 `nav2_map.png`。图片尺寸未变时，`nav2_map.yaml` 无需修改；重新启动导航后会自动加载清理后的地图。
+
+黑色表示障碍、白色表示自由空间、灰色表示未知且默认不可通行。若清理后目标仍不可规划，应在 RViz 检查 `global_costmap/costmap`：障碍附近的膨胀层仍可能将该区域判为不可通行，这是正常的安全约束。
+
+人员点保留在 `map.pcd` 中通常不会直接阻塞导航；只要墙体等固定结构占主导，localizer 的 ICP 往往仍能成功重定位。若人员残留很多、楼道固定特征少，或重定位反复失败，最可靠的比赛前处理仍是清空场地后重新建图。人工清图后应至少多次启动导航，确认终端稳定出现 `Relocalization is valid`。
 
 # 统一使用指南
 
