@@ -31,41 +31,50 @@ controller_server:
       plugin: nav2_controller::SimpleGoalChecker
       stateful: true
       xy_goal_tolerance: 0.20
-      yaw_goal_tolerance: 0.20
+      # Navigation goals are position goals for this differential-drive setup.
+      # Accept the path-tangent heading at arrival instead of doing a large
+      # in-place turn solely to match the RViz goal arrow.
+      yaw_goal_tolerance: 3.14
 
     FollowPath:
       plugin: nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController
       desired_linear_vel: 0.10
-      lookahead_dist: 0.20
-      min_lookahead_dist: 0.30
-      max_lookahead_dist: 0.90
-      lookahead_time: 1.5
-      rotate_to_heading_angular_vel: 0.60
+      # At 0.10 m/s this gives a 0.35 m lookahead. The slightly longer preview
+      # filters small grid/pose errors in straight corridors without becoming
+      # so long that the vehicle cuts sharply across doorway corners.
+      lookahead_dist: 0.35
+      min_lookahead_dist: 0.35
+      max_lookahead_dist: 0.70
+      lookahead_time: 3.5
+      rotate_to_heading_angular_vel: 0.30
       transform_tolerance: 0.5
       use_velocity_scaled_lookahead_dist: true
       min_approach_linear_velocity: 0.05
-      approach_velocity_scaling_dist: 0.60
+      approach_velocity_scaling_dist: 0.80
       use_collision_detection: true
-      max_allowed_time_to_collision_up_to_carrot: 1.0
+      max_allowed_time_to_collision_up_to_carrot: 3.0
       use_regulated_linear_velocity_scaling: true
       use_cost_regulated_linear_velocity_scaling: true
       regulated_linear_scaling_min_radius: 0.90
-      regulated_linear_scaling_min_speed: 0.10
-      cost_scaling_dist: 0.40
+      regulated_linear_scaling_min_speed: 0.05
+      cost_scaling_dist: 0.55
       cost_scaling_gain: 1.0
-      inflation_cost_scaling_factor: 3.0
+      inflation_cost_scaling_factor: 1.5
       use_rotate_to_heading: true
       allow_reversing: false
-      rotate_to_heading_min_angle: 0.785
-      max_angular_accel: 1.5
+      # Align with the first path segment before translating when the heading
+      # error exceeds about 11.5 degrees. This prevents a diagonal launch into
+      # the lane when the robot initially faces away from the lane direction.
+      rotate_to_heading_min_angle: 0.20
+      max_angular_accel: 0.80
       max_robot_pose_search_dist: 10.0
 
 local_costmap:
   local_costmap:
     ros__parameters:
       use_sim_time: false
-      update_frequency: 8.0
-      publish_frequency: 4.0
+      update_frequency: 10.0
+      publish_frequency: 5.0
       global_frame: lidar
       robot_base_frame: base_link
       transform_tolerance: 0.5
@@ -74,7 +83,7 @@ local_costmap:
       height: 8
       resolution: 0.05
       footprint: "[[0.31, 0.225], [0.31, -0.225], [-0.31, -0.225], [-0.31, 0.225]]"
-      footprint_padding: 0.02
+      footprint_padding: 0.07
       plugins: [voxel_layer, inflation_layer]
 
       voxel_layer:
@@ -87,7 +96,7 @@ local_costmap:
         z_resolution: 0.125
         z_voxels: 16
         max_obstacle_height: 1.80
-        mark_threshold: 0
+        mark_threshold: 2
         unknown_threshold: 15
         observation_sources: body_cloud
         body_cloud:
@@ -100,15 +109,16 @@ local_costmap:
           obstacle_min_range: 0.25
           obstacle_max_range: 5.0
           raytrace_min_range: 0.25
-          raytrace_max_range: 6.0
+          raytrace_max_range: 10.0
           observation_persistence: 0.0
           expected_update_rate: 0.0
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         enabled: true
-        inflation_radius: 0.35
-        cost_scaling_factor: 3.0
+        # Keep a larger live safety envelope around people and other obstacles.
+        inflation_radius: 0.60
+        cost_scaling_factor: 1.5
 
       always_send_full_costmap: true
 
@@ -117,14 +127,14 @@ global_costmap:
     ros__parameters:
       use_sim_time: false
       update_frequency: 2.0
-      publish_frequency: 1.0
+      publish_frequency: 2.0
       global_frame: map
       robot_base_frame: base_link
       transform_tolerance: 0.5
       resolution: 0.05
       track_unknown_space: true
       footprint: "[[0.31, 0.225], [0.31, -0.225], [-0.31, -0.225], [-0.31, 0.225]]"
-      footprint_padding: 0.02
+      footprint_padding: 0.07
       plugins: [static_layer, obstacle_layer, inflation_layer]
 
       static_layer:
@@ -150,17 +160,19 @@ global_costmap:
           min_obstacle_height: -0.18
           max_obstacle_height: 1.50
           obstacle_min_range: 0.25
-          obstacle_max_range: 5.0
+          obstacle_max_range: 6.0
           raytrace_min_range: 0.25
-          raytrace_max_range: 6.0
+          raytrace_max_range: 10.0
           observation_persistence: 0.0
           expected_update_rate: 0.0
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         enabled: true
-        inflation_radius: 0.35
-        cost_scaling_factor: 3.0
+        # Keep the global route away from walls and doorway edges instead of
+        # optimizing for the geometrically shortest, wall-hugging path.
+        inflation_radius: 0.55
+        cost_scaling_factor: 1.5
 
       always_send_full_costmap: true
 
@@ -175,10 +187,19 @@ planner_server:
     expected_planner_frequency: 2.0
     planner_plugins: [GridBased]
     GridBased:
-      plugin: nav2_navfn_planner/NavfnPlanner
+      # Smac 2D considers the whole inflation potential field. Its elevated
+      # travel-cost multiplier prefers the low-cost corridor centre instead
+      # of following the edge of the local inflated obstacle band.
+      plugin: nav2_smac_planner/SmacPlanner2D
       tolerance: 0.25
-      use_astar: true
+      downsample_costmap: false
+      downsampling_factor: 1
+      cost_travel_multiplier: 3.0
       allow_unknown: false
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      max_planning_time: 2.0
+      use_final_approach_orientation: false
 
 smoother_server:
   ros__parameters:
@@ -232,10 +253,10 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: false
     feedback: CLOSED_LOOP
-    max_velocity: [0.35, 0.0, 0.60]
-    min_velocity: [-0.15, 0.0, -0.60]
-    max_accel: [0.60, 0.0, 1.50]
-    max_decel: [-0.80, 0.0, -1.50]
+    max_velocity: [0.35, 0.0, 0.45]
+    min_velocity: [-0.15, 0.0, -0.45]
+    max_accel: [0.60, 0.0, 0.80]
+    max_decel: [-0.80, 0.0, -0.80]
     odom_topic: /odom
     odom_duration: 0.2
     deadband_velocity: [0.0, 0.0, 0.0]
