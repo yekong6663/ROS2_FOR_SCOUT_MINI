@@ -1,30 +1,87 @@
-# 工作空间结构
+# 项目目录与功能包
 
-```
+本仓库由两个第三方工作空间、两个项目工作空间和地图数据目录组成。下面只列源代码和需要人工维护的文件；各工作空间编译后自动生成的 `build/`、`install/`、`log/` 未展开。
+
+```text
 ROS2_FOR_SCOUT_MINI/
-├── third_party/                          # 第三方依赖（只编译一次）
-│   ├── fast_lio2_ws/                     # FAST-LIO2 相关工作空间
+├── third_party/
+│   ├── fast_lio2_ws/                         # 雷达、激光惯性里程计与重定位
 │   │   └── src/
-│   │       ├── FASTLIO2_ROS2/            # FAST-LIO2 完整版（里程计+回环+重定位+地图优化）
-│   │       ├── livox_ros_driver2/        # Livox ROS2 雷达驱动
-│   │       ├── Livox-SDK2/               # Livox 底层 SDK（cmake 安装）
-│   │       └── Sophus/                   # 李群/李代数库（cmake 安装）
-│   └── scout_mini_ws/                    # Scout Mini 相关工作空间
+│   │       ├── FASTLIO2_ROS2/
+│   │       │   ├── fastlio2/                 # FAST-LIO2 里程计与实时去畸变点云
+│   │       │   ├── pgo/                      # 回环检测、位姿图优化与地图保存
+│   │       │   ├── localizer/                # PCD 地图重定位，发布 map → lidar
+│   │       │   ├── hba/                      # 离线地图一致性精化
+│   │       │   └── interface/                # 上述模块使用的 ROS 2 服务接口
+│   │       ├── livox_ros_driver2/            # Livox MID-360 ROS 2 驱动
+│   │       ├── Livox-SDK2/                   # Livox 底层通信 SDK
+│   │       └── Sophus/                       # 位姿计算依赖
+│   └── scout_mini_ws/                        # Scout Mini 底盘通信
 │       └── src/
-│           ├── scout_ros2/               # Scout Mini 底盘驱动（多功能包子目录）
-│           └── ugv_sdk/                  # 底盘通信 SDK
-├── mine_ws/                              # 你自己的 ROS2 包（频繁修改）
-│   └── src/
-├── log/
+│           ├── scout_ros2/
+│           │   ├── scout_base/               # CAN 底盘驱动及 /cmd_vel 接口
+│           │   ├── scout_description/        # 机器人模型与描述文件
+│           │   └── scout_msgs/               # Scout 状态消息定义
+│           └── ugv_sdk/                      # AgileX 底盘通信 SDK
+├── my_party/
+│   ├── map_transformation_ws/                # 三维点云地图转换工作空间
+│   │   └── src/pointcloud_map_projection/    # map.pcd → Nav2 二维栅格地图
+│   └── navigation_ws/                        # 导航工作空间
+│       └── src/
+│           ├── scout_navigation_bringup/     # 建图、地图转换、重定位和导航总启动包
+│           ├── scout_navigation_plugins/     # 自定义规划器实验代码（当前不启用）
+│           └── nav2_lifecycle_manager/       # 本项目使用的 Nav2 生命周期管理器源码
+├── maps/
+│   ├── indoor_01/                            # 当前室内地图及人工清图文件
+│   └── site_01/                              # 另一套场地地图
+├── C1965.STEP                               # Scout Mini 车体尺寸参考模型
 └── 比赛规则.pdf
 ```
 
-> **设计思路**：三个独立工作空间。第三方包按功能拆分为 `fast_lio2_ws/` 和 `scout_mini_ws/`，只编译一次；你自己的包在 `mine_ws/`，修改后单独编译。通过 overlay 叠加使用：
-> ```bash
-> source third_party/fast_lio2_ws/install/setup.bash    # 先 source FAST-LIO2 依赖
-> source third_party/scout_mini_ws/install/setup.bash   # 再 source Scout 底盘依赖
-> source mine_ws/install/setup.bash                     # 最后 source 自己的
-> ```
+## 地图目录内容
+
+每个可导航地图目录应尽量保持相同结构：
+
+```text
+maps/<地图名>/
+├── map.pcd                  # 三维点云地图，供 localizer 重定位
+├── poses.txt                # 建图关键帧位姿
+├── patches/                 # 可选，关键帧点云
+├── nav2_map.png             # Nav2 二维占据栅格地图
+├── nav2_map.yaml            # 分辨率、原点及黑白阈值
+└── initial_pose.yaml        # 该地图的默认初始位姿
+```
+
+`indoor_01/nav2_map.xcf` 是人工清理二维地图时使用的 GIMP 工程文件，最终导航读取的是导出的 `nav2_map.png`，不要在启动导航时直接使用 XCF。
+
+## 工作空间关系与 source 顺序
+
+项目不是一个整体工作空间，而是四个相互叠加的工作空间：
+
+```text
+fast_lio2_ws ─┐
+              ├─→ navigation_ws
+scout_mini_ws ┘
+
+map_transformation_ws ─→ 只在 PCD 转二维地图时使用
+```
+
+正常运行建图、重定位或导航前，按以下顺序加载：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/install/setup.bash
+```
+
+需要重新转换地图时，再加载转换工作空间：
+
+```bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/map_transformation_ws/install/setup.bash
+```
+
+修改哪个工作空间，就进入该工作空间单独执行 `colcon build --symlink-install`。只修改 YAML、launch、RViz 或 README 通常不需要重新编译，但启动中的节点不会自动采用新参数，需要完整重启对应系统。
 
 
 # SCOUT MINI底盘
