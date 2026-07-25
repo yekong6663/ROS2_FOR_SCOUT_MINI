@@ -29,19 +29,18 @@ controller_server:
 
     general_goal_checker:
       plugin: nav2_controller::SimpleGoalChecker
+      # Once the position tolerance is reached, keep it latched. The hybrid
+      # path should already have aligned most of the final heading, leaving
+      # only a small residual correction here.
       stateful: true
-      xy_goal_tolerance: 0.20
-      # Navigation goals are position goals for this differential-drive setup.
-      # Accept the path-tangent heading at arrival instead of doing a large
-      # in-place turn solely to match the RViz goal arrow.
-      yaw_goal_tolerance: 3.14
+      xy_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.15
 
     FollowPath:
       plugin: nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController
-      desired_linear_vel: 0.10
-      # At 0.10 m/s this gives a 0.35 m lookahead. The slightly longer preview
-      # filters small grid/pose errors in straight corridors without becoming
-      # so long that the vehicle cuts sharply across doorway corners.
+      desired_linear_vel: 0.50
+      # At 0.50 m/s the velocity-scaled preview is capped at 0.70 m. The
+      # 0.35 m minimum still filters small grid/pose errors at low speed.
       lookahead_dist: 0.35
       min_lookahead_dist: 0.35
       max_lookahead_dist: 0.70
@@ -49,14 +48,16 @@ controller_server:
       rotate_to_heading_angular_vel: 0.30
       transform_tolerance: 0.5
       use_velocity_scaled_lookahead_dist: true
-      min_approach_linear_velocity: 0.05
-      approach_velocity_scaling_dist: 0.80
+      # Avoid crawling and alternating steering corrections for most of the
+      # final metre. Slow down only over the final 0.45 m, then align yaw.
+      min_approach_linear_velocity: 0.08
+      approach_velocity_scaling_dist: 0.45
       use_collision_detection: true
       max_allowed_time_to_collision_up_to_carrot: 3.0
       use_regulated_linear_velocity_scaling: true
       use_cost_regulated_linear_velocity_scaling: true
       regulated_linear_scaling_min_radius: 0.90
-      regulated_linear_scaling_min_speed: 0.05
+      regulated_linear_scaling_min_speed: 0.08
       cost_scaling_dist: 0.55
       cost_scaling_gain: 1.0
       inflation_cost_scaling_factor: 1.5
@@ -187,19 +188,35 @@ planner_server:
     expected_planner_frequency: 2.0
     planner_plugins: [GridBased]
     GridBased:
-      # Smac 2D considers the whole inflation potential field. Its elevated
-      # travel-cost multiplier prefers the low-cost corridor centre instead
-      # of following the edge of the local inflated obstacle band.
-      plugin: nav2_smac_planner/SmacPlanner2D
-      tolerance: 0.25
+      # Hybrid A* plans x/y/yaw together. This turns toward the requested final
+      # heading along the approach instead of leaving a large in-place rotation
+      # until after the goal position has been reached.
+      plugin: nav2_smac_planner/SmacPlannerHybrid
+      tolerance: 0.15
       downsample_costmap: false
       downsampling_factor: 1
-      cost_travel_multiplier: 3.0
       allow_unknown: false
       max_iterations: 1000000
       max_on_approach_iterations: 1000
       max_planning_time: 2.0
-      use_final_approach_orientation: false
+      motion_model_for_search: DUBIN
+      angle_quantization_bins: 72
+      analytic_expansion_ratio: 3.5
+      analytic_expansion_max_length: 2.5
+      minimum_turning_radius: 0.50
+      reverse_penalty: 2.1
+      change_penalty: 0.0
+      non_straight_penalty: 1.2
+      cost_penalty: 3.0
+      lookup_table_size: 20.0
+      cache_obstacle_heuristic: false
+      debug_visualizations: false
+      smoother:
+        max_iterations: 1000
+        w_smooth: 0.30
+        w_data: 0.20
+        tolerance: 1.0e-10
+        do_refinement: true
 
 smoother_server:
   ros__parameters:
@@ -253,7 +270,7 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: false
     feedback: CLOSED_LOOP
-    max_velocity: [0.35, 0.0, 0.45]
+    max_velocity: [0.50, 0.0, 0.45]
     min_velocity: [-0.15, 0.0, -0.45]
     max_accel: [0.60, 0.0, 0.80]
     max_decel: [-0.80, 0.0, -0.80]

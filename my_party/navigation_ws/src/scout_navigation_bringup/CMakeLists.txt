@@ -7,6 +7,7 @@ install(DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME})
 
 install(PROGRAMS
+  scripts/go_to_recorded_pose.py
   scripts/relocalize_and_wait.py
   DESTINATION lib/${PROJECT_NAME})
 

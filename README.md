@@ -491,7 +491,7 @@ PGO 保存成功后，地图目录应包含：
 - `map_server` 加载转换得到的 `nav2_map.yaml`。
 - 全局代价地图使用 `map` 坐标系、静态地图层、实时障碍层和膨胀层。
 - 局部滚动代价地图使用 `lidar` 坐标系，将实时 `/fastlio2/body_cloud` 接入体素障碍层。
-- 全局规划使用 SmacPlanner2D，局部控制使用 Regulated Pure Pursuit。
+- 全局规划使用 SmacPlannerHybrid，局部控制使用 Regulated Pure Pursuit。
 - `velocity_smoother` 对导航速度进行限幅和平滑，最终向底盘 `/cmd_vel` 输出。
 
 `ScoutAstarPlanner` 目前仍是插件骨架，`createPlan()` 尚未实现，因此不能加入 `planner_plugins`。当前配置使用已经过启动验证的内置规划器；自定义 A* 属于后续替换项，不影响现阶段实车导航联调。
@@ -501,8 +501,8 @@ PGO 保存成功后，地图目录应包含：
 | 项目 | 当前值 |
 |---|---|
 | 机器人 footprint | `0.62 m × 0.45 m`，另加 `0.07 m` padding |
-| 当前导航期望前进速度 | `0.10 m/s` |
-| 速度平滑器前进上限 | `0.35 m/s` |
+| 当前导航期望前进速度 | `0.50 m/s` |
+| 速度平滑器前进上限 | `0.50 m/s` |
 | 速度平滑器倒车上限 | `0.15 m/s`（当前控制器禁止倒车） |
 | 最大角速度 | `0.45 rad/s` |
 | 控制频率 | `10 Hz`（与约 `10 Hz` 的实时点云匹配） |
@@ -510,7 +510,7 @@ PGO 保存成功后，地图目录应包含：
 | 实时障碍范围 | 局部标记 `5 m`、全局标记 `6 m`，清除 `10 m` |
 | 全局/局部膨胀半径（室内基准） | 全局 `0.55 m`，局部 `0.60 m` |
 
-其中 `desired_linear_vel` 才是控制器正常跟踪路径时的目标速度；`velocity_smoother.max_velocity` 只是最终的硬限幅，不能单独提高它来提速。这些是首次低速联调值。正式比赛前必须根据实车外廓、制动距离、点云噪声和赛道宽度调整 [`nav2_params.yaml`](my_party/navigation_ws/src/scout_navigation_bringup/config/nav2_params.yaml)。
+其中 `desired_linear_vel` 才是控制器正常跟踪路径时的目标速度；`velocity_smoother.max_velocity` 是最终硬限幅，两者当前均为 `0.50 m/s`。这已经不是首次低速联调值：正式使用前必须从 `0.10 m/s` 逐级验证，并根据实车外廓、制动距离、点云噪声和赛道宽度调整 [`nav2_params.yaml`](my_party/navigation_ws/src/scout_navigation_bringup/config/nav2_params.yaml)。
 
 ## 沿车道行驶与实车调参
 
@@ -528,7 +528,7 @@ RPP 控制器跟踪路径
 
 ### 先确认车道在地图中的表达方式
 
-- **实体边界车道**：车道两侧是墙、护栏、路沿或锥桶，且已出现在 `nav2_map` 中。当前“SmacPlanner2D + RPP + 膨胀层”会利用完整代价梯度规划；`cost_travel_multiplier: 3.0` 会惩罚靠近膨胀区的路线，使路径更倾向于车道中部，而不只是选几何距离最短的路线。
+- **实体边界车道**：车道两侧是墙、护栏、路沿或锥桶，且已出现在 `nav2_map` 中。当前“SmacPlannerHybrid + RPP + 膨胀层”会同时规划位置和朝向；`cost_penalty: 3.0` 会惩罚靠近膨胀区的路线，使路径更倾向于车道中部，而不只是选几何距离最短的路线。
 - **地面油漆线车道**：激光雷达通常不能稳定识别油漆线，且地图转换的 `z_min` 会滤除接近地面的点。因此当前方案不知道车道线的位置，不能保证严格平行或居中。若比赛要求严格循线，需要额外接入相机车道线识别，或预先录制/配置车道中心线航点；只更换全局规划器不能解决这一问题。
 
 ### 调参顺序
@@ -536,19 +536,20 @@ RPP 控制器跟踪路径
 每次只修改一组参数、重新启动导航并记录结果。先在空旷直道、再在弯道、最后在有临时障碍的车道测试；未验证前不要提速。
 
 1. **确认地图与路径**：在 RViz 中检查 `nav2_map` 的车道边界是否连续，并观察全局路径是否落在车道中部。若路径贴近一侧，先检查地图投影质量和机器人 footprint，再调膨胀层；不要先改控制器。
-2. **低速跟踪**：保持 `desired_linear_vel: 0.10`。观察直道是否摆动、弯道是否切弯或贴边，以及机器人是否能停在目标附近。
-3. **调 RPP 前瞻与起步方向**：当前启用了 `use_velocity_scaled_lookahead_dist: true`，实际前瞻距离为 `速度 × lookahead_time`，再限制到 `min_lookahead_dist` 与 `max_lookahead_dist` 之间。当前 `0.10 m/s × 3.5 s = 0.35 m`，可过滤走廊直道上的小幅栅格误差和定位噪声，减少左右摆动；同时将最大角速度限制为 `0.45 rad/s`、角加减速度限制为 `0.80 rad/s²`，避免转向指令突变。`rotate_to_heading_min_angle: 0.20` 表示车头与路径初始方向相差超过约 `11.5°` 时，先原地对正再前进，避免斜着进入车道。导航目标只严格要求位置到达，终点航向采用路径切线方向，不会为了匹配 RViz 目标箭头而原地大幅旋转。
+2. **低速跟踪**：首次验证时临时将 `desired_linear_vel` 降到 `0.10`。观察直道是否摆动、弯道是否切弯或贴边，以及机器人是否能停在目标附近；通过后再恢复当前的 `0.50 m/s`。
+3. **调 RPP 前瞻与起步方向**：当前启用了 `use_velocity_scaled_lookahead_dist: true`，实际前瞻距离为 `速度 × lookahead_time`，再限制到 `min_lookahead_dist` 与 `max_lookahead_dist` 之间。在当前 `0.50 m/s` 下，计算结果超过上限，因此实际前瞻为 `0.70 m`；低速时至少保持 `0.35 m`，以过滤走廊直道上的小幅栅格误差和定位噪声。最大角速度限制为 `0.45 rad/s`、角加减速度限制为 `0.80 rad/s²`，避免转向指令突变。`rotate_to_heading_min_angle: 0.20` 表示车头与路径初始方向相差超过约 `11.5°` 时，先原地对正再前进，避免斜着进入车道。SmacPlannerHybrid 使用 `0.50 m` 最小转弯半径，在到达终点前沿路径逐渐转到目标 yaw；终点位置和航向容差均为 `0.15`，RPP 只处理剩余的小角度误差。
 4. **验证实时避障**：在路径前方放置固定障碍物，RViz 中同时观察 `/fastlio2/body_cloud` 与 local costmap；确认障碍被标记、移开后被清除，小车会减速或重新规划。
-5. **逐级提速**：仅在每一级速度都能稳定完成直道、弯道和避障后，再把 `desired_linear_vel` 按 `0.10 → 0.20 → 0.30 → 0.35 m/s` 调高。`desired_linear_vel` 不得高于 `velocity_smoother.max_velocity[0]`。
+5. **逐级提速**：仅在每一级速度都能稳定完成直道、弯道和避障后，再把 `desired_linear_vel` 按 `0.10 → 0.20 → 0.30 → 0.40 → 0.50 m/s` 调高。`desired_linear_vel` 不得高于 `velocity_smoother.max_velocity[0]`。
 
 ### 症状到参数的对应关系
 
 | 实车现象 | 优先检查/调整 | 调整方向 |
 |---|---|---|
-| 全局路径贴着膨胀区边缘 | `cost_travel_multiplier`、全局膨胀层、地图边界 | 先确认全局代价图有连续梯度；仍贴边时将 `cost_travel_multiplier` 从 `3.0` 小幅提高，不要只增大局部膨胀半径 |
+| 全局路径贴着膨胀区边缘 | `cost_penalty`、全局膨胀层、地图边界 | 先确认全局代价图有连续梯度；仍贴边时将 `cost_penalty` 从 `3.0` 小幅提高，不要只增大局部膨胀半径 |
 | 弯道切向内侧、离边界太近 | `inflation_radius`、地图边界、footprint | 先确认实体边界完整；仍贴边时小幅增大 `inflation_radius` |
 | 路径居中但车身左右摆动 | `min_lookahead_dist`、`lookahead_time` | 小幅增大前瞻会更平稳，但过大会在急弯切弯 |
 | 弯道跟不上或明显切弯 | `min_lookahead_dist`、速度 | 先降低 `desired_linear_vel`，再小幅减小前瞻；不要低于定位和控制噪声可承受范围 |
+| 终点前缓慢左右晃动、最终 yaw 偏差大 | Hybrid 路径、终点容差、接近减速距离 | 让 SmacPlannerHybrid 提前规划终点朝向，使用 `0.15 m/0.15 rad` 容差并缩短接近减速区，避免到点后才大角度原地旋转 |
 | 靠近障碍不减速或不绕行 | `/fastlio2/body_cloud`、VoxelLayer、高度/距离范围、TF | 先在 RViz 确认点云和 local costmap 中有障碍，再调整 `min_obstacle_height`、`obstacle_max_range` 等参数 |
 | 障碍移走后仍认为被占用 | `clearing`、`raytrace_max_range`、点云更新 | 确认 `clearing: true` 和点云持续更新；必要时检查雷达遮挡与 TF 时间戳 |
 | 反复原地旋转、无法脱困 | 默认恢复行为和局部障碍地图 | 先保留低速并记录日志；确认默认 `spin/backup/wait` 的触发原因后，再定制行为树，避免盲目增加恢复动作 |
@@ -596,11 +597,11 @@ cost_scaling_factor: 1.5
 
 该值增大时，代价从障碍向外衰减更快；减小时，高代价区会延伸得更远。先调整 `footprint` 和 `inflation_radius`，只有在路径仍明显贴边或过度保守时才微调此值。
 
-本项目当前将全局 `inflation_radius` 设为 `0.55 m`、局部设为 `0.60 m`，两层 `cost_scaling_factor` 均为 `1.5`，并配合 `0.07 m` footprint padding。全局层不必大于局部层：SmacPlanner2D 通过 `cost_travel_multiplier: 3.0` 主动避开全局高代价区，局部层则保留稍大的实时碰撞距离。RPP 碰撞预测时间为 `3.0 s`，靠近高代价区域时最低可减速到 `0.05 m/s`。若最窄门口因此无法形成路径，应先测量门宽，再按 `0.05 m` 逐级减小全局膨胀半径。
+本项目当前将全局 `inflation_radius` 设为 `0.55 m`、局部设为 `0.60 m`，两层 `cost_scaling_factor` 均为 `1.5`，并配合 `0.07 m` footprint padding。全局层不必大于局部层：SmacPlannerHybrid 通过 `cost_penalty: 3.0` 主动避开全局高代价区，局部层则保留稍大的实时碰撞距离。RPP 碰撞预测时间为 `3.0 s`，靠近高代价区域时最低可减速到 `0.08 m/s`。若最窄门口因此无法形成路径，应先测量门宽，再按 `0.05 m` 逐级减小全局膨胀半径。
 
 在 RViz 中同时显示 `/map`、`global_costmap/costmap`、`local_costmap/costmap` 和 `/fastlio2/body_cloud`：只有在两张 costmap 都存在连续通路时才发送目标；局部图中出现人员时允许短暂绕行，人员离开后应恢复到全局车道中心路径。
 
-当前使用的是适合差速底盘的 `SmacPlanner2D`：它会对生成路径做平滑，并通过完整膨胀代价场把路径推向走廊中部。它仍不能识别地面油漆车道线；没有墙、护栏等地图边界时，要严格沿车道中心行驶仍需车道中心线航点或视觉循线。若以后确实需要让路径严格满足最小转弯半径，再单独评估 `SmacPlannerHybrid`，不要在窄门实测前直接替换。
+当前使用 `SmacPlannerHybrid`，以 `DUBIN` 前进运动模型和 `0.50 m` 最小转弯半径生成连续的 `x/y/yaw` 路径；这样可在空间允许时提前完成终点转向。它仍不能识别地面油漆车道线；没有墙、护栏等地图边界时，要严格沿车道中心行驶仍需车道中心线航点或视觉循线。若狭窄位置没有足够空间满足转弯半径，规划器应报告无路径，而不是强行切角。
 
 ## TF
 
@@ -1029,6 +1030,34 @@ valid: false/超时 ──→ 禁止启动 Nav2 并关闭本次 launch
 | `start_rviz` | `true` | 无图形界面时设为 `false` |
 | `start_nav2` | `true` | 只测试自动重定位时可设为 `false` |
 | `relocalization_timeout` | `120.0` | 等待有效重定位的最长秒数 |
+
+### E. 单独返回已记录位置
+
+程序 [`go_to_recorded_pose.py`](my_party/navigation_ws/src/scout_navigation_bringup/scripts/go_to_recorded_pose.py) 不在任何 launch 中自动启动。先确认导航系统已经启动、重定位正常且底盘处于 CAN 控制模式，再在另一个终端手动执行：
+
+```bash
+source /opt/ros/humble/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/fast_lio2_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws/install/setup.bash
+source /workspaces/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/install/setup.bash
+
+ros2 run scout_navigation_bringup go_to_recorded_pose.py
+```
+
+默认目标为 `indoor_01` 中刚记录的位置：
+
+```yaml
+x: 4.034532
+y: 6.797518
+yaw: 1.416757
+```
+
+程序会等待 `/navigate_to_pose`、发送一次目标、输出剩余距离，并在到达或失败后自动退出。按 `Ctrl+C` 会申请取消当前目标。也可以临时覆盖目标而不修改源码：
+
+```bash
+ros2 run scout_navigation_bringup go_to_recorded_pose.py --ros-args \
+  -p x:=1.0 -p y:=2.0 -p yaw:=1.57
+```
 
 以下章节保留分终端启动方式，用于理解数据流和定位故障。
 
