@@ -1,0 +1,25 @@
+# Manually recorded poses in the indoor_01 map frame.
+poses:
+  current_pose_20260725_122813:
+    recorded_at_utc: "2026-07-25T12:28:13Z"
+    frame_id: map
+    child_frame_id: base_link
+    translation:
+      x: 4.034532
+      y: 6.797518
+      z: -0.214554
+    rotation_rpy:
+      roll: 0.015101
+      pitch: -0.026422
+      yaw: 1.416757
+    rotation_quaternion_xyzw:
+      x: 0.014328
+      y: -0.005120
+      z: 0.650603
+      w: 0.759265
+    nav2_pose_2d:
+      x: 4.034532
+      y: 6.797518
+      yaw: 1.416757
+      quaternion_z: 0.650603231
+      quaternion_w: 0.759417827
