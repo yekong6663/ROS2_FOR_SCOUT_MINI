@@ -1,7 +1,9 @@
 build/
 install/
 log/
+bags/
 
+图片/
 比赛规则.pdf
 .codex
 .claude

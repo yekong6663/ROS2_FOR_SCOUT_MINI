@@ -1,0 +1,10 @@
+image: nav2_map.png
+mode: trinary
+resolution: 0.05
+origin: [-22.5, -21, 0]
+negate: 0
+occupied_thresh: 0.65
+# The XCF uses light gray for unexplored space and white for the driven lane.
+# With trinary mode, 0.25 incorrectly classified that gray background as free.
+# Only near-white pixels are navigable; gray remains unknown/non-traversable.
+free_thresh: 0.10
