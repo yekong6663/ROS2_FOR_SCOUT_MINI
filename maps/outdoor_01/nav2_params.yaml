@@ -1,3 +1,5 @@
+# Outdoor road/bridge profile for maps/outdoor_01.
+# Gray map cells are a hard boundary in both global planning and local control.
 bt_navigator:
   ros__parameters:
     use_sim_time: false
@@ -54,12 +56,14 @@ controller_server:
       # Keep angular sampling narrow on straight segments. The previous 0.30
       # spread repeatedly selected saturated steering for small heading errors.
       wz_std: 0.18
-      vx_max: 0.35
+      # Outdoor staged maximum: faster than indoor testing while retaining
+      # enough control margin for localization and point-cloud latency.
+      vx_max: 0.40
       vx_min: 0.0
       vy_max: 0.0
       # On bends MPPI should reduce linear speed and turn continuously rather
       # than saturating yaw rate and then counter-steering.
-      wz_max: 0.60
+      wz_max: 0.55
       temperature: 0.30
       gamma: 0.02
       prune_distance: 2.0
@@ -144,14 +148,22 @@ local_costmap:
       unknown_cost_value: 254
       lethal_cost_threshold: 100
       trinary_costmap: true
+      # StaticLayer runs first and initializes the rolling window from /map.
+      # VoxelLayer then merges live lidar obstacles with that static result.
       use_maximum: false
-      width: 8
-      height: 8
+      # A 10 m outdoor window sees lane edges and moving obstacles earlier.
+      width: 10
+      height: 10
       resolution: 0.05
       footprint: "[[0.31, 0.225], [0.31, -0.225], [-0.31, -0.225], [-0.31, 0.225]]"
-      footprint_padding: 0.07
-      # StaticLayer is required here so MPPI candidate trajectories also see
-      # the gray boundary of the saved map, not only live point-cloud obstacles.
+      # The physical body is 0.62 x 0.45 m. Six centimetres is the middle
+      # setting between the previous over-conservative 0.08 m and the recent
+      # 0.04 m test, adding a little more road-edge clearance without trapping
+      # a vehicle that is physically about 0.20 m from the edge.
+      footprint_padding: 0.06
+      # Use Nav2's standard composition order. The earlier experimental order
+      # put StaticLayer last; changing its merge mode then exposed every close
+      # lidar return at once and the 0.45 m inflation engulfed the robot.
       plugins: [static_layer, voxel_layer, inflation_layer]
 
       static_layer:
@@ -165,12 +177,12 @@ local_costmap:
         enabled: true
         footprint_clearing_enabled: true
         publish_voxel_map: false
-        # The transformed sensor origin is about z=-0.33 m in the lidar world
-        # frame. It must remain inside the voxel grid or raytracing cannot
-        # clear old obstacles, which causes repeated false collisions.
-        origin_z: -0.60
+        # Runtime logs have shown the transformed sensor origin as low as
+        # z=-0.63 m. Keep it inside the voxel grid so raytracing can clear
+        # people and other obstacles after they move away.
+        origin_z: -0.80
         z_resolution: 0.15
-        z_voxels: 16
+        z_voxels: 18
         max_obstacle_height: 1.80
         mark_threshold: 2
         unknown_threshold: 15
@@ -183,18 +195,21 @@ local_costmap:
           min_obstacle_height: -0.18
           max_obstacle_height: 1.50
           obstacle_min_range: 0.25
-          obstacle_max_range: 5.0
+          obstacle_max_range: 4.5
           raytrace_min_range: 0.25
-          raytrace_max_range: 10.0
+          raytrace_max_range: 6.0
           observation_persistence: 0.0
           expected_update_rate: 0.0
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         enabled: true
-        # Keep a larger live safety envelope around people and other obstacles.
-        inflation_radius: 0.50
-        cost_scaling_factor: 1.2
+        # MPPI already collision-checks the complete padded rectangle. Keep
+        # only a modest extra buffer here: 0.12 m inflation plus 0.06 m
+        # footprint padding fits a measured ~0.20 m roadside start clearance,
+        # while the old 0.45 m radius necessarily enclosed the robot.
+        inflation_radius: 0.12
+        cost_scaling_factor: 3.0
         inflate_unknown: false
         inflate_around_unknown: true
 
@@ -221,7 +236,9 @@ global_costmap:
       # This is a hard geometric planning margin: the 0.45 m-wide body keeps
       # 0.07 m away from occupied/unknown map cells. It is not a larger cost
       # weight and therefore cannot be traded away for a shorter edge path.
-      footprint_padding: 0.07
+      # Hard outdoor boundary margin: in addition to the 0.45 m physical
+      # width, keep the body at least 0.10 m inside the white mapped region.
+      footprint_padding: 0.10
       plugins: [static_layer, obstacle_layer, inflation_layer]
 
       static_layer:
@@ -247,9 +264,9 @@ global_costmap:
           min_obstacle_height: -0.18
           max_obstacle_height: 1.50
           obstacle_min_range: 0.25
-          obstacle_max_range: 6.0
+          obstacle_max_range: 8.0
           raytrace_min_range: 0.25
-          raytrace_max_range: 10.0
+          raytrace_max_range: 12.0
           observation_persistence: 0.0
           expected_update_rate: 0.0
 
@@ -284,7 +301,7 @@ planner_server:
       # checking. A 0.5 m turning radius prevents straight-then-sharp-turn paths.
       plugin: nav2_smac_planner/SmacPlannerLattice
       lattice_filepath: /opt/ros/humble/share/nav2_smac_planner/sample_primitives/5cm_resolution/0.5m_turning_radius/diff/output.json
-      tolerance: 0.15
+      tolerance: 0.10
       allow_unknown: false
       max_iterations: 1000000
       max_on_approach_iterations: 1000
@@ -360,10 +377,10 @@ velocity_smoother:
     # smoother. CLOSED_LOOP kept ramping from stale measured yaw rate, causing
     # steering overshoot followed by an opposite correction.
     feedback: OPEN_LOOP
-    max_velocity: [0.50, 0.0, 0.60]
-    min_velocity: [-0.15, 0.0, -0.60]
-    max_accel: [0.60, 0.0, 0.80]
-    max_decel: [-0.80, 0.0, -0.80]
+    max_velocity: [0.45, 0.0, 0.55]
+    min_velocity: [-0.15, 0.0, -0.55]
+    max_accel: [0.50, 0.0, 0.70]
+    max_decel: [-0.70, 0.0, -0.70]
     odom_topic: /odom
     odom_duration: 0.2
     deadband_velocity: [0.0, 0.0, 0.0]

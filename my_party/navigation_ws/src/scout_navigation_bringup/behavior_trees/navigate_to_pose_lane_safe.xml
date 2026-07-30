@@ -1,7 +1,9 @@
 <!--
   Stable lane-following tree for Scout Mini.
 
-  Replan only when the goal changes or the existing path becomes invalid.
+  Replan at a low, stable rate so every controller retry receives a newly
+  computed non-empty path. The previous cached-path fallback could accept an
+  empty path after MPPI aborted and repeatedly resend it to FollowPath.
   Recovery deliberately excludes Spin and BackUp: an unexpected in-place
   rotation or blind reverse is unsafe near lane boundaries and on bridges.
 -->
@@ -9,31 +11,24 @@
   <BehaviorTree ID="MainTree">
     <RecoveryNode number_of_retries="4" name="NavigateLaneSafe">
       <PipelineSequence name="NavigateWithStablePath">
-        <RateController hz="1.0" name="CheckPathAt1Hz">
+        <RateController hz="0.5" name="ReplanAtHalfHz">
           <RecoveryNode number_of_retries="1" name="ComputePathToPose">
-            <Fallback name="KeepValidPath">
-              <ReactiveSequence name="PathStillValid">
-                <Inverter>
-                  <GlobalUpdatedGoal/>
-                </Inverter>
-                <IsPathValid path="{path}"/>
-              </ReactiveSequence>
-              <ComputePathToPose
-                goal="{goal}"
-                path="{path}"
-                planner_id="GridBased"/>
-            </Fallback>
+            <ComputePathToPose
+              goal="{goal}"
+              path="{path}"
+              planner_id="GridBased"/>
             <ClearEntireCostmap
               name="ClearGlobalCostmapAfterPlanningFailure"
               service_name="global_costmap/clear_entirely_global_costmap"/>
           </RecoveryNode>
         </RateController>
-        <RecoveryNode number_of_retries="1" name="FollowPath">
-          <FollowPath path="{path}" controller_id="FollowPath"/>
-          <ClearEntireCostmap
-            name="ClearLocalCostmapAfterControlFailure"
-            service_name="local_costmap/clear_entirely_local_costmap"/>
-        </RecoveryNode>
+        <!--
+          Do not immediately retry FollowPath after clearing the costmap:
+          MPPI clears its failed input path while aborting, so that retry used
+          to receive zero poses. Let the outer recovery wait/clear, then return
+          through ComputePathToPose before FollowPath can run again.
+        -->
+        <FollowPath path="{path}" controller_id="FollowPath"/>
       </PipelineSequence>
       <ReactiveFallback name="SafeRecoveryFallback">
         <GoalUpdated/>

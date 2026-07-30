@@ -1,3 +1,5 @@
+# Indoor profile for maps/indoor_01.
+# This file is loaded automatically from map_dir; tune indoor values here only.
 bt_navigator:
   ros__parameters:
     use_sim_time: false

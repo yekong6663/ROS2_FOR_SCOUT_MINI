@@ -24,6 +24,65 @@ def _as_bool(value):
     return value.strip().lower() in ("1", "true", "yes", "on")
 
 
+def _load_and_validate_nav2_params(params_path):
+    with params_path.open("r", encoding="utf-8") as stream:
+        content = yaml.safe_load(stream) or {}
+
+    try:
+        local_params = content["local_costmap"]["local_costmap"]["ros__parameters"]
+        global_params = content["global_costmap"]["global_costmap"]["ros__parameters"]
+        planner_params = content["planner_server"]["ros__parameters"]
+        planner = planner_params["GridBased"]
+    except (KeyError, TypeError) as error:
+        raise RuntimeError(
+            f"Invalid per-map Nav2 parameter structure in {params_path}: {error}"
+        ) from error
+
+    boundary_errors = []
+    if not global_params.get("track_unknown_space", False):
+        boundary_errors.append("global_costmap.track_unknown_space must be true")
+    if int(global_params.get("unknown_cost_value", -1)) != 255:
+        boundary_errors.append("global_costmap.unknown_cost_value must be 255")
+    if bool(planner.get("allow_unknown", True)):
+        boundary_errors.append("planner_server.GridBased.allow_unknown must be false")
+    if "static_layer" not in local_params.get("plugins", []):
+        boundary_errors.append("local_costmap must include static_layer")
+    if not local_params.get("track_unknown_space", False):
+        boundary_errors.append("local_costmap.track_unknown_space must be true")
+    # Humble MPPI treats NO_INFORMATION (255) as non-collision. The local
+    # profile therefore uses 254 as the input sentinel so map value 255 falls
+    # through StaticLayer and becomes a lethal obstacle.
+    if int(local_params.get("unknown_cost_value", -1)) != 254:
+        boundary_errors.append(
+            "local_costmap.unknown_cost_value must be 254 for a hard MPPI boundary"
+        )
+    if boundary_errors:
+        raise RuntimeError(
+            f"Unsafe boundary configuration in {params_path}: "
+            + "; ".join(boundary_errors)
+        )
+
+    footprint = global_params.get("footprint")
+    if isinstance(footprint, str):
+        footprint = yaml.safe_load(footprint)
+    if not isinstance(footprint, list) or len(footprint) < 3:
+        raise RuntimeError(f"Invalid robot footprint in {params_path}")
+    try:
+        footprint_x = [float(point[0]) for point in footprint]
+        footprint_y = [float(point[1]) for point in footprint]
+    except (IndexError, TypeError, ValueError) as error:
+        raise RuntimeError(f"Invalid robot footprint in {params_path}") from error
+
+    footprint_length = max(footprint_x) - min(footprint_x)
+    footprint_width = max(footprint_y) - min(footprint_y)
+    footprint_padding = float(global_params.get("footprint_padding", 0.0))
+    if footprint_padding <= 0.0:
+        raise RuntimeError(
+            f"global_costmap.footprint_padding must be positive in {params_path}"
+        )
+    return footprint_length, footprint_width, footprint_padding
+
+
 def _launch_navigation_system(context):
     map_dir = Path(LaunchConfiguration("map_dir").perform(context)).expanduser().resolve()
     if not map_dir.is_dir():
@@ -31,9 +90,19 @@ def _launch_navigation_system(context):
 
     pcd_path = map_dir / "map.pcd"
     nav2_map = map_dir / "nav2_map.yaml"
-    for required_file in (pcd_path, nav2_map):
+    params_file_argument = LaunchConfiguration("params_file").perform(context)
+    nav2_params = (
+        Path(params_file_argument).expanduser().resolve()
+        if params_file_argument
+        else map_dir / "nav2_params.yaml"
+    )
+    for required_file in (pcd_path, nav2_map, nav2_params):
         if not required_file.is_file():
             raise RuntimeError(f"Required navigation map does not exist: {required_file}")
+
+    footprint_length, footprint_width, footprint_padding = (
+        _load_and_validate_nav2_params(nav2_params)
+    )
 
     with nav2_map.open("r", encoding="utf-8") as stream:
         nav2_map_metadata = yaml.safe_load(stream) or {}
@@ -52,14 +121,12 @@ def _launch_navigation_system(context):
         if pose_file_argument
         else map_dir / "initial_pose.yaml"
     )
-
     fastlio_share = get_package_share_directory("fastlio2")
     localizer_share = get_package_share_directory("localizer")
     livox_share = get_package_share_directory("livox_ros_driver2")
     scout_base_share = get_package_share_directory("scout_base")
     scout_plugins_share = get_package_share_directory("scout_navigation_plugins")
     nav_bringup_share = get_package_share_directory("scout_navigation_bringup")
-    nav2_bringup_share = get_package_share_directory("nav2_bringup")
 
     start_livox = LaunchConfiguration("start_livox")
     start_base = LaunchConfiguration("start_base")
@@ -126,7 +193,7 @@ def _launch_navigation_system(context):
         output="screen",
         arguments=[
             "-d",
-            os.path.join(nav2_bringup_share, "rviz", "nav2_default_view.rviz"),
+            os.path.join(nav_bringup_share, "config", "navigation_light.rviz"),
         ],
         condition=IfCondition(start_rviz),
     )
@@ -140,6 +207,11 @@ def _launch_navigation_system(context):
             {
                 "pcd_path": str(pcd_path),
                 "pose_file": str(pose_file),
+                "map_yaml": str(nav2_map),
+                "base_frame": "base_link",
+                "footprint_length": footprint_length,
+                "footprint_width": footprint_width,
+                "footprint_padding": footprint_padding,
                 "x": float(LaunchConfiguration("initial_x").perform(context)),
                 "y": float(LaunchConfiguration("initial_y").perform(context)),
                 "z": float(LaunchConfiguration("initial_z").perform(context)),
@@ -161,6 +233,7 @@ def _launch_navigation_system(context):
         ),
         launch_arguments={
             "map": str(nav2_map),
+            "params_file": str(nav2_params),
             "use_sim_time": "false",
             "autostart": "true",
         }.items(),
@@ -171,7 +244,7 @@ def _launch_navigation_system(context):
         if event.returncode == 0:
             success_message = (
                 f"Relocalization succeeded for {pcd_path}; "
-                f"starting Nav2 with {nav2_map}"
+                f"starting Nav2 with map {nav2_map} and parameters {nav2_params}"
                 if start_nav2
                 else f"Relocalization succeeded for {pcd_path}"
             )
@@ -203,15 +276,34 @@ def _launch_navigation_system(context):
         )
     )
 
+    lio_exit_handler = RegisterEventHandler(
+        OnProcessExit(
+            target_action=fastlio,
+            on_exit=[
+                LogInfo(
+                    msg=(
+                        "ERROR: FAST-LIO2 exited; shutting down navigation "
+                        "because the lidar->body TF chain is no longer valid"
+                    )
+                ),
+                EmitEvent(
+                    event=Shutdown(reason="FAST-LIO2 exited; navigation unsafe")
+                ),
+            ],
+        )
+    )
+
     startup_message = LogInfo(
         msg=(
             f"Navigation map directory: {map_dir}; 3D map: {pcd_path}; "
-            f"2D map: {nav2_map}; initial pose file: {pose_file}"
+            f"2D map: {nav2_map}; Nav2 parameters: {nav2_params}; "
+            f"initial pose file: {pose_file}"
         )
     )
 
     return [
         gate_exit_handler,
+        lio_exit_handler,
         startup_message,
         livox_driver,
         scout_base,
@@ -230,7 +322,16 @@ def generate_launch_description():
                 "map_dir",
                 description=(
                     "Map folder containing map.pcd and nav2_map.yaml. "
+                    "nav2_params.yaml is required and loaded from this folder. "
                     "initial_pose.yaml is loaded automatically when present."
+                ),
+            ),
+            DeclareLaunchArgument(
+                "params_file",
+                default_value="",
+                description=(
+                    "Optional per-map Nav2 YAML override; defaults to "
+                    "<map_dir>/nav2_params.yaml."
                 ),
             ),
             DeclareLaunchArgument(
@@ -272,7 +373,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "start_rviz",
                 default_value="true",
-                description="Start RViz with the Nav2 default view.",
+                description="Start the 5 FPS lightweight navigation RViz view.",
             ),
             DeclareLaunchArgument(
                 "start_nav2",

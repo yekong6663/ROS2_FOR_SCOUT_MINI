@@ -155,7 +155,21 @@ public:
     }
     void lidarCB(const livox_ros_driver2::msg::CustomMsg::SharedPtr msg)
     {
+        if (msg->point_num == 0 || msg->points.empty())
+        {
+            RCLCPP_WARN_THROTTLE(
+                this->get_logger(), *this->get_clock(), 2000,
+                "Ignoring an empty Livox point-cloud packet");
+            return;
+        }
         CloudType::Ptr cloud = Utils::livox2PCL(msg, m_builder_config.lidar_filter_num, m_builder_config.lidar_min_range, m_builder_config.lidar_max_range);
+        if (cloud->empty())
+        {
+            RCLCPP_WARN_THROTTLE(
+                this->get_logger(), *this->get_clock(), 2000,
+                "Ignoring a Livox packet with no valid points after filtering");
+            return;
+        }
         std::lock_guard<std::mutex> lock(m_state_data.lidar_mutex);
         double timestamp = Utils::getSec(msg->header);
         if (timestamp < m_state_data.last_lidar_time)
@@ -176,6 +190,15 @@ public:
         if (!m_state_data.lidar_pushed)
         {
             m_package.cloud = m_state_data.lidar_buffer.front().second;
+            if (!m_package.cloud || m_package.cloud->empty())
+            {
+                m_state_data.lidar_buffer.pop_front();
+                m_state_data.lidar_pushed = false;
+                RCLCPP_WARN_THROTTLE(
+                    this->get_logger(), *this->get_clock(), 2000,
+                    "Discarding an empty lidar frame before synchronization");
+                return false;
+            }
             std::sort(m_package.cloud->points.begin(), m_package.cloud->points.end(), [](PointType &p1, PointType &p2)
                       { return p1.curvature < p2.curvature; });
             m_package.cloud_start_time = m_state_data.lidar_buffer.front().first;

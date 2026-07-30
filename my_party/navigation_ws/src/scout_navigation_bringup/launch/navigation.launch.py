@@ -1,6 +1,12 @@
+from pathlib import Path
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    OpaqueFunction,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -8,12 +14,23 @@ from launch_ros.actions import Node
 import os
 
 
-def generate_launch_description():
-    bringup_share = get_package_share_directory("scout_navigation_bringup")
+def _launch_navigation(context):
     nav2_bringup_share = get_package_share_directory("nav2_bringup")
 
-    map_yaml = LaunchConfiguration("map")
-    params_file = LaunchConfiguration("params_file")
+    map_yaml = Path(LaunchConfiguration("map").perform(context)).expanduser().resolve()
+    params_argument = LaunchConfiguration("params_file").perform(context)
+    params_file = (
+        Path(params_argument).expanduser().resolve()
+        if params_argument
+        else map_yaml.parent / "nav2_params.yaml"
+    )
+    if not map_yaml.is_file():
+        raise RuntimeError(f"Nav2 map YAML does not exist: {map_yaml}")
+    if not params_file.is_file():
+        raise RuntimeError(
+            f"Per-map Nav2 parameters do not exist: {params_file}"
+        )
+
     use_sim_time = LaunchConfiguration("use_sim_time")
     autostart = LaunchConfiguration("autostart")
 
@@ -23,9 +40,9 @@ def generate_launch_description():
         name="map_server",
         output="screen",
         parameters=[
-            params_file,
+            str(params_file),
             {
-                "yaml_filename": map_yaml,
+                "yaml_filename": str(map_yaml),
                 "use_sim_time": use_sim_time,
             },
         ],
@@ -52,11 +69,15 @@ def generate_launch_description():
         launch_arguments={
             "use_sim_time": use_sim_time,
             "autostart": autostart,
-            "params_file": params_file,
+            "params_file": str(params_file),
             "use_composition": "False",
         }.items(),
     )
 
+    return [map_server, map_lifecycle_manager, navigation]
+
+
+def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument(
@@ -68,10 +89,11 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "params_file",
-                default_value=os.path.join(
-                    bringup_share, "config", "nav2_params.yaml"
+                default_value="",
+                description=(
+                    "Optional Nav2 parameter YAML override; defaults to "
+                    "<map YAML directory>/nav2_params.yaml."
                 ),
-                description="Absolute path to the Nav2 parameter file.",
             ),
             DeclareLaunchArgument(
                 "use_sim_time",
@@ -83,8 +105,6 @@ def generate_launch_description():
                 default_value="true",
                 description="Automatically activate lifecycle nodes.",
             ),
-            map_server,
-            map_lifecycle_manager,
-            navigation,
+            OpaqueFunction(function=_launch_navigation),
         ]
     )

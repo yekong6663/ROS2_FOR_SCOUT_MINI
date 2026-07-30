@@ -1,8 +1,15 @@
+#include <algorithm>
+
 #include "utils.h"
 pcl::PointCloud<pcl::PointXYZINormal>::Ptr Utils::livox2PCL(const livox_ros_driver2::msg::CustomMsg::SharedPtr msg, int filter_num, double min_range, double max_range)
 {
     pcl::PointCloud<pcl::PointXYZINormal>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZINormal>);
-    int point_num = msg->point_num;
+    // A malformed parameter or a transient empty/truncated Livox packet must
+    // not reach integer division or indexed point access.
+    filter_num = std::max(filter_num, 1);
+    const int point_num = std::min(
+        static_cast<int>(msg->point_num),
+        static_cast<int>(msg->points.size()));
     cloud->reserve(point_num / filter_num + 1);
     for (int i = 0; i < point_num; i += filter_num)
     {

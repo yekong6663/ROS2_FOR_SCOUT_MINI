@@ -1,3 +1,5 @@
+# General site profile for maps/site_01.
+# This file is loaded automatically from map_dir.
 bt_navigator:
   ros__parameters:
     use_sim_time: false
