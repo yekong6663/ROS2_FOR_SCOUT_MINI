@@ -103,7 +103,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "can_port",
-                default_value="can0",
+                default_value="can1",
                 description="Scout Mini SocketCAN interface.",
             ),
             livox_driver,

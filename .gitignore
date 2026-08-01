@@ -1,6 +1,9 @@
 build/
 install/
 log/
+*_build/
+*_install/
+.local_deps/
 bags/
 
 图片/

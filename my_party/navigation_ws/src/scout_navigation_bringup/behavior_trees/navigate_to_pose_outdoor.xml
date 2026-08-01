@@ -1,0 +1,42 @@
+<!--
+  Outdoor lane-safe navigation tree.
+
+  Replan at 0.75 Hz so temporary detours clear promptly without continuously
+  loading the State Lattice planner and starving the controller on Jetson.
+  When FollowPath fails, wait one second before refreshing both costmaps and
+  replanning. Spin and BackUp remain disabled near road edges.
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="4" name="NavigateOutdoorLaneSafe">
+      <PipelineSequence name="NavigateWithStablePath">
+        <RateController hz="0.75" name="ReplanAtThreeQuarterHz">
+          <RecoveryNode number_of_retries="1" name="ComputePathToPose">
+            <ComputePathToPose
+              goal="{goal}"
+              path="{path}"
+              planner_id="GridBased"/>
+            <ClearEntireCostmap
+              name="ClearGlobalCostmapAfterPlanningFailure"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+        <FollowPath path="{path}" controller_id="FollowPath"/>
+      </PipelineSequence>
+      <ReactiveFallback name="SafeRecoveryFallback">
+        <GoalUpdated/>
+        <RoundRobin name="SafeRecoveryActions">
+          <Wait name="WaitForTemporaryObstacle" wait_duration="1"/>
+          <Sequence name="RefreshCostmaps">
+            <ClearEntireCostmap
+              name="ClearLocalCostmap"
+              service_name="local_costmap/clear_entirely_local_costmap"/>
+            <ClearEntireCostmap
+              name="ClearGlobalCostmap"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+          </Sequence>
+        </RoundRobin>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

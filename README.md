@@ -135,7 +135,7 @@ git config --global https.proxy http://127.0.0.1:7897
 > | 步骤 | 执行位置 | 原因 |
 > |------|---------|------|
 > | `modprobe gs_usb` | **Ubuntu 宿主机（仅一次）** | 容器共享宿主机内核，无法加载模块 |
-> | `ip link set can0` / `candump` | 容器内 | 已配置 `--cap-add=NET_ADMIN` + `--network=host` |
+> | `ip link set can2` / `candump` | 容器内 | 已配置 `--cap-add=NET_ADMIN` + `--network=host` |
 > | ROS2 驱动（scout_base） | 容器内 | 同容器环境 |
 
 #### 硬件连接
@@ -174,16 +174,16 @@ can_dev                49152  1 gs_usb
 #### 3. 设置 500K 波特率并使能 CAN-to-USB 适配器（容器内执行）
 ```bash
 sudo apt update && sudo apt install -y iproute2  # 安装iproute2
-sudo ip link set can0 up type can bitrate 500000
+sudo ip link set can2 up type can bitrate 500000
 ```
 
 #### 4. 验证 CAN 设备（容器内执行）
 ```bash
 ifconfig -a
 ```
-正常情况下应能看到 `can0` 设备，比如
+正常情况下应能看到 `can2` 设备，比如
 ```bash
-can0: flags=193<UP,RUNNING,NOARP>  mtu 16
+can2: flags=193<UP,RUNNING,NOARP>  mtu 16
         unspec 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00  txqueuelen 10  (UNSPEC)
         RX packets 0  bytes 0 (0.0 B)
         RX errors 0  dropped 0  overruns 0  frame 0
@@ -196,7 +196,7 @@ can0: flags=193<UP,RUNNING,NOARP>  mtu 16
 若此时 CAN-to-USB 已经与 SCOUT MINI 2.0 机器人相连，且小车已开启，使用 `candump` 即可监听来自底盘的数据：
 
 ```bash
-candump can0
+candump can2
 ```
 > 收到 CAN 帧即表示通信正常，可继续下一步启动 ROS2 驱动。
 
@@ -211,7 +211,7 @@ colcon build
 source install/setup.bash
 
 # 单独测试 Scout Mini 底盘驱动
-ros2 launch scout_base scout_mini_base.launch.py port_name:=can0
+ros2 launch scout_base scout_mini_base.launch.py port_name:=can2
 ```
 
 成功后终端会打印：
@@ -912,7 +912,7 @@ RViz
 ```bash
 ros2 launch scout_navigation_bringup mapping.launch.py \
   start_base:=true \
-  can_port:=can0
+  can_port:=can2
 ```
 
 `mapping.launch.py` 只负责启动建图节点，不会自动决定何时保存地图。采集完成后仍需调用 `/pgo/save_maps`，防止误操作覆盖已有地图。
@@ -925,7 +925,7 @@ ros2 launch scout_navigation_bringup mapping.launch.py \
 | `start_base` | `false` | ROS 控车时设为 `true` |
 | `start_robot_tf` | `true` | 发布 `body → base_link` |
 | `start_rviz` | `true` | 无图形界面时设为 `false` |
-| `can_port` | `can0` | Scout SocketCAN 接口 |
+| `can_port` | `can2` | Scout SocketCAN 接口 |
 
 ### A.1 保存当前三维地图
 
@@ -1068,12 +1068,12 @@ ros2 launch scout_navigation_bringup navigation_system.launch.py \
 启动导航前务必逐项确认：
 
 1. **记得开启雷达线**：确认 MID-360 的供电线和网线已经连接，雷达已上电；启动后 `/livox/lidar` 和 `/livox/imu` 必须持续发布。
-2. **配置 CAN**：本项目使用 `can0`、`500000 bit/s`。每次重新插拔 CAN 适配器或重启环境后执行：
+2. **配置 CAN**：本项目使用 `can2`、`500000 bit/s`。每次重新插拔 CAN 适配器或重启环境后执行：
 
    ```bash
    sudo modprobe gs_usb   # 主机内
-   sudo ip link set can0 up type can bitrate 500000 # 容器内
-   candump can0 # 测试有无数据流
+   sudo ip link set can2 up type can bitrate 500000 # 容器内
+   candump can2 # 测试有无数据流
    ```
 
    启动前还要确认遥控器 `SWB` 位于最上方 Command/CAN 模式；`/scout_status` 应为 `vehicle_state: 0`、`control_mode: 1`、`error_code: 0`。
@@ -1113,7 +1113,7 @@ valid: true ──→ 检查整车 footprint 是否完全位于二维地图白�
 
 | 参数 | 默认值 | 说明 |
 |---|---|---|
-| `can_port` | `can0` | Scout SocketCAN 接口 |
+| `can_port` | `can2` | Scout SocketCAN 接口 |
 | `params_file` | 空 | 可选覆盖；为空时自动读取 `<map_dir>/nav2_params.yaml` |
 | `start_livox` | `true` | 外部已启动雷达时设为 `false` |
 | `start_base` | `true` | 外部已启动底盘时设为 `false` |
@@ -1179,7 +1179,7 @@ ros2 topic hz /livox/imu
 source /opt/ros/humble/setup.bash
 source /workspaces/ROS2_FOR_SCOUT_MINI/third_party/scout_mini_ws/install/setup.bash
 ros2 launch scout_base scout_mini_base.launch.py \
-  port_name:=can0 \
+  port_name:=can2 \
   publish_odom_tf:=false
 ```
 

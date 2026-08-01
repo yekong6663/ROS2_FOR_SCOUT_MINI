@@ -76,10 +76,14 @@ public:
             std::bind(&LIONode::lidarCB, this, std::placeholders::_1),
             lidar_options);
 
-        m_body_cloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("body_cloud", 10000);
-        m_world_cloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("world_cloud", 10000);
-        m_path_pub = this->create_publisher<nav_msgs::msg::Path>("lio_path", 10000);
-        m_odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("lio_odom", 10000);
+        // Navigation needs the newest observation, not a large reliable
+        // backlog of old clouds. A depth of 10000 allowed delayed obstacle
+        // frames to outlive the TF cache when a consumer briefly fell behind.
+        const auto realtime_qos = rclcpp::QoS(rclcpp::KeepLast(10));
+        m_body_cloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("body_cloud", realtime_qos);
+        m_world_cloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("world_cloud", realtime_qos);
+        m_path_pub = this->create_publisher<nav_msgs::msg::Path>("lio_path", realtime_qos);
+        m_odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("lio_odom", realtime_qos);
         m_tf_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
 
         m_state_data.path.poses.clear();
