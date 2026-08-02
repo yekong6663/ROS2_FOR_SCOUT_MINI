@@ -294,14 +294,15 @@ global_costmap:
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
-        # State Lattice already checks the complete padded rectangular
-        # footprint against occupied/unknown cells. Enabling this layer makes
-        # its INSCRIBED (253) band participate in the same footprint check and
-        # can reject a physically clear start as "Starting point in lethal
-        # space". Keep soft inflation in the local MPPI costmap instead.
-        enabled: false
-        inflation_radius: 0.50
-        cost_scaling_factor: 1.2
+        # Keep the hard footprint margin above, then add a short *soft* cost
+        # gradient beside unknown map cells.  Smac can therefore prefer the
+        # centre of the white lane instead of selecting an equally short path
+        # that hugs its gray boundary.  The 0.30 m range deliberately stays
+        # below the previous 0.50 m experiment, which made narrow but valid
+        # starting positions appear blocked.
+        enabled: true
+        inflation_radius: 0.30
+        cost_scaling_factor: 7.0
         inflate_unknown: false
         inflate_around_unknown: true
 
@@ -333,9 +334,9 @@ planner_server:
       reverse_penalty: 4.0
       change_penalty: 0.10
       non_straight_penalty: 1.05
-      # Keep the standard lattice cost term; boundary clearance comes from the
-      # padded footprint collision constraint above, not increased edge weight.
-      cost_penalty: 2.0
+      # Give the new soft boundary gradient enough influence to choose the
+      # middle of a lane while the padded footprint remains the hard limit.
+      cost_penalty: 2.5
       retrospective_penalty: 0.015
       # Differential primitives include rotate-in-place. Keep it available for
       # genuinely confined spaces, but make mid-route shortcut spins expensive.
