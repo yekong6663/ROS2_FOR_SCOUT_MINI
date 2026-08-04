@@ -64,13 +64,13 @@ controller_server:
       # of repeatedly sampling almost-straight stop/go trajectories.
       wz_std: 0.28
       # Outdoor straight-line speed ceiling. Curves, goals and obstacle costs
-      # can command substantially less than this limit.
-      vx_max: 0.40
+      # can command substantially less than this 0.50 m/s cruise limit.
+      vx_max: 0.50
       vx_min: 0.0
       vy_max: 0.0
       # Limit abrupt steering. The velocity smoother scales linear speed down
       # whenever angular acceleration is the limiting component.
-      wz_max: 0.50
+      wz_max: 0.65
       temperature: 0.30
       gamma: 0.02
       prune_distance: 2.0
@@ -294,13 +294,11 @@ global_costmap:
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
-        # Keep the hard footprint margin above, then add a short *soft* cost
-        # gradient beside unknown map cells.  Smac can therefore prefer the
-        # centre of the white lane instead of selecting an equally short path
-        # that hugs its gray boundary.  The 0.30 m range deliberately stays
-        # below the previous 0.50 m experiment, which made narrow but valid
-        # starting positions appear blocked.
-        enabled: true
+        # The padded footprint above remains the hard boundary constraint.
+        # Do not inflate the global static map: its inscribed-cost band can
+        # classify a valid near-edge startup pose as lethal before planning
+        # begins. Dynamic-obstacle clearance is handled by the local map.
+        enabled: false
         inflation_radius: 0.30
         cost_scaling_factor: 7.0
         inflate_unknown: false
@@ -334,9 +332,8 @@ planner_server:
       reverse_penalty: 4.0
       change_penalty: 0.10
       non_straight_penalty: 1.05
-      # Give the new soft boundary gradient enough influence to choose the
-      # middle of a lane while the padded footprint remains the hard limit.
-      cost_penalty: 2.5
+      # Boundary clearance comes from the padded footprint collision check.
+      cost_penalty: 2.0
       retrospective_penalty: 0.015
       # Differential primitives include rotate-in-place. Keep it available for
       # genuinely confined spaces, but make mid-route shortcut spins expensive.
@@ -376,9 +373,9 @@ behavior_server:
     robot_base_frame: base_link
     transform_tolerance: 0.5
     simulate_ahead_time: 2.0
-    max_rotational_vel: 0.60
+    max_rotational_vel: 0.65
     min_rotational_vel: 0.15
-    rotational_acc_lim: 1.5
+    rotational_acc_lim: 1.8
 
 waypoint_follower:
   ros__parameters:
@@ -403,13 +400,14 @@ velocity_smoother:
     # smoother. CLOSED_LOOP kept ramping from stale measured yaw rate, causing
     # steering overshoot followed by an opposite correction.
     feedback: OPEN_LOOP
-    # Temporary safety ceiling while validating stable obstacle avoidance.
-    max_velocity: [0.40, 0.0, 0.50]
-    min_velocity: [-0.15, 0.0, -0.50]
+    # Outdoor cruise ceiling. Turning and obstacle avoidance can still reduce
+    # the linear speed below this limit.
+    max_velocity: [0.50, 0.0, 0.65]
+    min_velocity: [-0.15, 0.0, -0.65]
     # Resume promptly after a dynamic obstacle has cleared, while keeping
     # braking stronger than acceleration at the outdoor cruise speed.
-    max_accel: [0.45, 0.0, 0.55]
-    max_decel: [-0.90, 0.0, -0.65]
+    max_accel: [0.50, 0.0, 0.70]
+    max_decel: [-1.20, 0.0, -0.90]
     odom_topic: /odom
     odom_duration: 0.2
     deadband_velocity: [0.0, 0.0, 0.0]

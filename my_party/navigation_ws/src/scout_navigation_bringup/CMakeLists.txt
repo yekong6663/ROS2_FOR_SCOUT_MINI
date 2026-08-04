@@ -8,6 +8,7 @@ install(DIRECTORY config launch behavior_trees
 
 install(PROGRAMS
   scripts/go_to_recorded_pose.py
+  scripts/run_outdoor_recorded_route.py
   scripts/relocalize_and_wait.py
   DESTINATION lib/${PROJECT_NAME})
 
