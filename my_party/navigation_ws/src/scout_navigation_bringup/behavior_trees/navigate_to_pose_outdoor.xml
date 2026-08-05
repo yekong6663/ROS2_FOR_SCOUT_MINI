@@ -3,8 +3,9 @@
 
   Replan at 0.75 Hz so temporary detours clear promptly without continuously
   loading the State Lattice planner and starving the controller on Jetson.
-  When FollowPath fails, wait one second before refreshing both costmaps and
-  replanning. Spin and BackUp remain disabled near road edges.
+  When FollowPath fails, wait and refresh the costmaps before replanning. If
+  that still fails within 2.5 metres of the goal, make one collision-checked,
+  low-speed retreat so the controller can approach the goal again.
 -->
 <root main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
@@ -34,6 +35,14 @@
             <ClearEntireCostmap
               name="ClearGlobalCostmap"
               service_name="global_costmap/clear_entirely_global_costmap"/>
+          </Sequence>
+          <Sequence name="RetreatOnlyNearGoal">
+            <ScoutNearGoal goal="{goal}" distance="2.5"/>
+            <BackUp
+              name="SafeNearGoalBackUp"
+              backup_dist="0.25"
+              backup_speed="0.08"/>
+            <Wait name="WaitForCostmapAfterBackUp" wait_duration="0.5"/>
           </Sequence>
         </RoundRobin>
       </ReactiveFallback>

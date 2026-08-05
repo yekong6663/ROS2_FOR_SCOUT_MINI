@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 import yaml
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -11,6 +11,7 @@ from launch.actions import (
     LogInfo,
     OpaqueFunction,
     RegisterEventHandler,
+    SetEnvironmentVariable,
 )
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
@@ -127,6 +128,7 @@ def _launch_navigation_system(context):
     scout_base_share = get_package_share_directory("scout_base")
     scout_plugins_share = get_package_share_directory("scout_navigation_plugins")
     nav_bringup_share = get_package_share_directory("scout_navigation_bringup")
+    nav_bringup_lib = Path(get_package_prefix("scout_navigation_bringup")) / "lib"
 
     start_livox = LaunchConfiguration("start_livox")
     start_base = LaunchConfiguration("start_base")
@@ -302,6 +304,10 @@ def _launch_navigation_system(context):
     )
 
     return [
+        SetEnvironmentVariable(
+            name="LD_LIBRARY_PATH",
+            value=f"{nav_bringup_lib}:{os.environ.get('LD_LIBRARY_PATH', '')}",
+        ),
         gate_exit_handler,
         lio_exit_handler,
         startup_message,

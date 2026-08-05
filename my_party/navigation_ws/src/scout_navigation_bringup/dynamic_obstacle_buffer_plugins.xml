@@ -1,0 +1,10 @@
+<library path="scout_dynamic_obstacle_buffer_layer">
+  <class
+    type="scout_navigation_bringup::DynamicObstacleBufferLayer"
+    base_class_type="nav2_costmap_2d::Layer">
+    <description>
+      Adds a short-lived, larger soft safety buffer around live lidar obstacles
+      without enlarging the saved static-map obstacle buffer.
+    </description>
+  </class>
+</library>

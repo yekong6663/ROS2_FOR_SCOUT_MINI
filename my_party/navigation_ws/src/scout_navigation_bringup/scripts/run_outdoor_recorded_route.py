@@ -27,11 +27,12 @@ class OutdoorRecordedRoute(Node):
         self.declare_parameter("server_timeout", 30.0)
         self.declare_parameter("transform_timeout", 30.0)
         self.declare_parameter("return_to_start", True)
+        self.declare_parameter("retry_wait_seconds", 2.0)
 
         # Recorded on outdoor_01 in the map frame.
-        self.declare_parameter("point_1_x", 19.61)
-        self.declare_parameter("point_1_y", 43.44)
-        self.declare_parameter("point_1_yaw", -0.155)
+        self.declare_parameter("point_1_x", 19.94)
+        self.declare_parameter("point_1_y", 41.16)
+        self.declare_parameter("point_1_yaw", 1.614)
         self.declare_parameter("point_2_x", 20.90)
         self.declare_parameter("point_2_y", 16.38)
         self.declare_parameter("point_2_yaw", -2.408)
@@ -114,8 +115,7 @@ class OutdoorRecordedRoute(Node):
             return False
         if result_future.result().status != GoalStatus.STATUS_SUCCEEDED:
             self.get_logger().error(
-                f"{name} failed with action status {result_future.result().status}; "
-                "route stopped without continuing to the next point"
+                f"{name} failed with action status {result_future.result().status}"
             )
             return False
         self.get_logger().info(f"Reached {name}")
@@ -126,6 +126,7 @@ class OutdoorRecordedRoute(Node):
         base_frame = str(self.get_parameter("base_frame").value)
         server_timeout = float(self.get_parameter("server_timeout").value)
         transform_timeout = float(self.get_parameter("transform_timeout").value)
+        retry_wait_seconds = float(self.get_parameter("retry_wait_seconds").value)
 
         if not self._wait_for_server(server_timeout):
             self.get_logger().error("Nav2 is unavailable; start navigation first")
@@ -162,8 +163,20 @@ class OutdoorRecordedRoute(Node):
             points.append(("startup position", *start_pose))
 
         for name, x, y, yaw in points:
-            if not self._navigate(name, x, y, yaw, frame_id, server_timeout):
-                return 4
+            attempt = 0
+            while rclpy.ok():
+                if self._navigate(name, x, y, yaw, frame_id, server_timeout):
+                    break
+                attempt += 1
+                self.get_logger().warning(
+                    f"{name} did not complete; keeping this goal and waiting "
+                    f"{retry_wait_seconds:.1f} s before retry {attempt}"
+                )
+                deadline = time.monotonic() + retry_wait_seconds
+                while rclpy.ok() and time.monotonic() < deadline:
+                    rclpy.spin_once(self, timeout_sec=0.1)
+            if not rclpy.ok():
+                return 130
         self.get_logger().info("Recorded route completed")
         return 0
 
