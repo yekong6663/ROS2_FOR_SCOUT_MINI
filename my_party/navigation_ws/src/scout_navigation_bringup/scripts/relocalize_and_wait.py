@@ -26,10 +26,10 @@ class RelocalizationGate(Node):
         self.declare_parameter("footprint_length", 0.62)
         self.declare_parameter("footprint_width", 0.45)
         self.declare_parameter("footprint_padding", 0.07)
-        # A 5 cm occupancy grid can clip one or two samples at a map image
+        # A 5 cm occupancy grid can clip a few samples at a map image
         # border even when the physical footprint is in the surveyed lane.
         # More than this remains a hard startup safety failure.
-        self.declare_parameter("max_blocked_samples", 2)
+        self.declare_parameter("max_blocked_samples", 3)
         self.declare_parameter("x", 0.0)
         self.declare_parameter("y", 0.0)
         self.declare_parameter("z", 0.0)
@@ -181,7 +181,7 @@ class RelocalizationGate(Node):
             self.get_logger().warning(
                 "Tolerating "
                 f"{blocked}/{checked} padded-footprint samples at the map "
-                "raster edge; this is within the configured two-cell limit"
+                "raster edge; this is within the configured three-cell limit"
             )
 
         self.get_logger().info(

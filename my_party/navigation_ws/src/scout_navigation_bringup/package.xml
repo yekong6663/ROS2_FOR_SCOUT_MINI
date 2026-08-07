@@ -47,6 +47,7 @@
   <exec_depend>rviz2</exec_depend>
   <exec_depend>scout_base</exec_depend>
   <exec_depend>scout_navigation_plugins</exec_depend>
+  <exec_depend>sensor_msgs_py</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
 
   <export>

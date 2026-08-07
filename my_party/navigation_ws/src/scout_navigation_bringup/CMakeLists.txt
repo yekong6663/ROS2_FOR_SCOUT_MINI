@@ -38,6 +38,7 @@ install(DIRECTORY config launch behavior_trees
   DESTINATION share/${PROJECT_NAME})
 
 install(PROGRAMS
+  scripts/dock_to_recorded_point3.py
   scripts/go_to_recorded_pose.py
   scripts/run_outdoor_recorded_route.py
   scripts/relocalize_and_wait.py

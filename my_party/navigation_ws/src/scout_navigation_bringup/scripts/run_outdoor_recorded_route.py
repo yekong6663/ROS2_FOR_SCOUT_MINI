@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Visit two recorded outdoor poses and return to the pose at startup."""
+"""Visit two recorded poses, dock at point 3, and return to the start."""
 
 import math
 import sys
@@ -8,12 +8,15 @@ import time
 
 import rclpy
 from action_msgs.msg import GoalStatus
+from geometry_msgs.msg import Twist
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.time import Time
+from sensor_msgs.msg import PointCloud2
+from sensor_msgs_py import point_cloud2
 from tf2_ros import Buffer, TransformException, TransformListener
 
 
@@ -28,20 +31,55 @@ class OutdoorRecordedRoute(Node):
         self.declare_parameter("transform_timeout", 30.0)
         self.declare_parameter("return_to_start", True)
         self.declare_parameter("retry_wait_seconds", 2.0)
+        self.declare_parameter(
+            "normal_behavior_tree",
+            "/home/nvidia/auto/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/"
+            "scout_navigation_bringup/behavior_trees/navigate_to_pose_outdoor.xml",
+        )
+        self.declare_parameter(
+            "precision_behavior_tree",
+            "/home/nvidia/auto/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/"
+            "scout_navigation_bringup/behavior_trees/navigate_to_pose_outdoor_precision.xml",
+        )
 
         # Recorded on outdoor_01 in the map frame.
         self.declare_parameter("point_1_x", 19.94)
         self.declare_parameter("point_1_y", 41.16)
         self.declare_parameter("point_1_yaw", 1.614)
+        self.declare_parameter("point_1_precision", False)
         self.declare_parameter("point_2_x", 20.90)
         self.declare_parameter("point_2_y", 16.38)
         self.declare_parameter("point_2_yaw", -2.408)
+        self.declare_parameter("point_2_precision", False)
+        # The new recorded pre-dock pose. Reach it precisely with Nav2.
+        self.declare_parameter("staging_x", 1.754)
+        self.declare_parameter("staging_y", 0.355)
+        self.declare_parameter("staging_yaw", 3.140)
+        # Original point 3: the final precision parking point.
+        self.declare_parameter("point_3_x", 0.126)
+        self.declare_parameter("point_3_y", 0.394)
+        self.declare_parameter("point_3_yaw", 3.113)
+        self.declare_parameter("crawl_speed", 0.14)
+        self.declare_parameter("crawl_timeout", 45.0)
+        self.declare_parameter("max_yaw_rate", 0.16)
+        self.declare_parameter("alignment_tolerance", 0.04)
+        self.declare_parameter("position_tolerance", 0.10)
+        self.declare_parameter("yaw_tolerance", 0.12)
+        self.declare_parameter("front_safety_enabled", True)
+        self.declare_parameter("front_stop_distance", 0.45)
+        self.declare_parameter("front_half_width", 0.16)
+        self.declare_parameter("front_min_points", 4)
 
         self._client = ActionClient(self, NavigateToPose, "/navigate_to_pose")
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, self)
         self._goal_handle = None
         self._last_feedback_time = 0.0
+        self._front_blocked = False
+        self._cmd_pub = self.create_publisher(Twist, "/cmd_vel_nav", 10)
+        self._front_sub = self.create_subscription(
+            PointCloud2, "/fastlio2/body_cloud", self._front_cloud_callback, 10
+        )
 
     def _wait_for_server(self, timeout):
         deadline = time.monotonic() + timeout
@@ -82,7 +120,7 @@ class OutdoorRecordedRoute(Node):
             f"{feedback_message.feedback.distance_remaining:.2f} m remaining"
         )
 
-    def _navigate(self, name, x, y, yaw, frame_id, timeout):
+    def _navigate(self, name, x, y, yaw, precision, frame_id, timeout):
         goal = NavigateToPose.Goal()
         goal.pose.header.frame_id = frame_id
         goal.pose.header.stamp = self.get_clock().now().to_msg()
@@ -90,9 +128,15 @@ class OutdoorRecordedRoute(Node):
         goal.pose.pose.position.y = y
         goal.pose.pose.orientation.z = math.sin(yaw * 0.5)
         goal.pose.pose.orientation.w = math.cos(yaw * 0.5)
+        goal.behavior_tree = str(
+            self.get_parameter(
+                "precision_behavior_tree" if precision else "normal_behavior_tree"
+            ).value
+        )
 
         self.get_logger().info(
-            f"Navigating to {name}: x={x:.3f}, y={y:.3f}, yaw={yaw:.3f}"
+            f"Navigating to {name} ({'precision' if precision else 'normal'}): "
+            f"x={x:.3f}, y={y:.3f}, yaw={yaw:.3f}"
         )
         send_future = self._client.send_goal_async(
             goal, feedback_callback=self._feedback_callback
@@ -120,6 +164,96 @@ class OutdoorRecordedRoute(Node):
             return False
         self.get_logger().info(f"Reached {name}")
         return True
+
+    def _front_cloud_callback(self, cloud):
+        if not bool(self.get_parameter("front_safety_enabled").value):
+            self._front_blocked = False
+            return
+        stop_distance = float(self.get_parameter("front_stop_distance").value)
+        half_width = float(self.get_parameter("front_half_width").value)
+        minimum = int(self.get_parameter("front_min_points").value)
+        count = 0
+        try:
+            for x, y, z in point_cloud2.read_points(
+                cloud, field_names=("x", "y", "z"), skip_nans=True
+            ):
+                if 0.20 < x < stop_distance and abs(y) < half_width and -0.15 < z < 1.70:
+                    count += 1
+                    if count >= minimum:
+                        self._front_blocked = True
+                        return
+        except Exception as error:
+            self.get_logger().warn(f"Front safety cloud parse failed: {error}")
+        self._front_blocked = False
+
+    def _stop_chassis(self):
+        self._cmd_pub.publish(Twist())
+
+    def _current_pose(self, frame_id, base_frame):
+        try:
+            transform = self._tf_buffer.lookup_transform(
+                frame_id, base_frame, Time(), timeout=Duration(seconds=0.15)
+            )
+        except TransformException:
+            return None
+        t = transform.transform.translation
+        q = transform.transform.rotation
+        yaw = math.atan2(
+            2.0 * (q.w * q.z + q.x * q.y),
+            1.0 - 2.0 * (q.y * q.y + q.z * q.z),
+        )
+        return t.x, t.y, yaw
+
+    def _crawl_to_point_3(self, frame_id, base_frame):
+        goal_x = float(self.get_parameter("point_3_x").value)
+        goal_y = float(self.get_parameter("point_3_y").value)
+        goal_yaw = float(self.get_parameter("point_3_yaw").value)
+        speed = float(self.get_parameter("crawl_speed").value)
+        timeout = float(self.get_parameter("crawl_timeout").value)
+        max_yaw_rate = float(self.get_parameter("max_yaw_rate").value)
+        align_tolerance = float(self.get_parameter("alignment_tolerance").value)
+        position_tolerance = float(self.get_parameter("position_tolerance").value)
+        yaw_tolerance = float(self.get_parameter("yaw_tolerance").value)
+        deadline = time.monotonic() + timeout
+        self.get_logger().info(
+            "Starting direct crawl to original point 3; local costmap is ignored"
+        )
+        while rclpy.ok() and time.monotonic() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.05)
+            pose = self._current_pose(frame_id, base_frame)
+            if pose is None:
+                self._stop_chassis()
+                self.get_logger().error("Lost map-to-base transform; direct crawl stopped")
+                return False
+            x, y, yaw = pose
+            dx, dy = goal_x - x, goal_y - y
+            distance = math.hypot(dx, dy)
+            yaw_error = math.atan2(math.sin(goal_yaw - yaw), math.cos(goal_yaw - yaw))
+            if distance <= position_tolerance and abs(yaw_error) <= yaw_tolerance:
+                self._stop_chassis()
+                self.get_logger().info("Reached original point 3 with precision tolerance")
+                return True
+            if abs(yaw_error) > align_tolerance:
+                command = Twist()
+                command.angular.z = max(-max_yaw_rate, min(max_yaw_rate, 1.2 * yaw_error))
+                self._cmd_pub.publish(command)
+                continue
+            forward_error = math.cos(goal_yaw) * dx + math.sin(goal_yaw) * dy
+            if forward_error <= 0.0:
+                self._stop_chassis()
+                self.get_logger().error("Original point 3 is behind the chassis; stopping without reversing")
+                return False
+            if self._front_blocked:
+                self._stop_chassis()
+                self.get_logger().warning("Object in narrow front safety corridor; direct crawl stopped")
+                return False
+            command = Twist()
+            command.linear.x = min(speed, max(0.03, 0.6 * forward_error))
+            command.angular.z = max(-max_yaw_rate, min(max_yaw_rate, 0.8 * yaw_error))
+            self._cmd_pub.publish(command)
+        self._stop_chassis()
+        self.get_logger().error("Direct crawl timed out; vehicle stopped")
+        return False
 
     def run(self):
         frame_id = str(self.get_parameter("frame_id").value)
@@ -151,21 +285,30 @@ class OutdoorRecordedRoute(Node):
                 float(self.get_parameter("point_1_x").value),
                 float(self.get_parameter("point_1_y").value),
                 float(self.get_parameter("point_1_yaw").value),
+                bool(self.get_parameter("point_1_precision").value),
             ),
             (
                 "recorded point 2",
                 float(self.get_parameter("point_2_x").value),
                 float(self.get_parameter("point_2_y").value),
                 float(self.get_parameter("point_2_yaw").value),
+                bool(self.get_parameter("point_2_precision").value),
+            ),
+            (
+                "pre-dock staging point",
+                float(self.get_parameter("staging_x").value),
+                float(self.get_parameter("staging_y").value),
+                float(self.get_parameter("staging_yaw").value),
+                True,
             ),
         ]
-        if bool(self.get_parameter("return_to_start").value):
-            points.append(("startup position", *start_pose))
 
-        for name, x, y, yaw in points:
+        for name, x, y, yaw, precision in points:
             attempt = 0
             while rclpy.ok():
-                if self._navigate(name, x, y, yaw, frame_id, server_timeout):
+                if self._navigate(
+                    name, x, y, yaw, precision, frame_id, server_timeout
+                ):
                     break
                 attempt += 1
                 self.get_logger().warning(
@@ -177,10 +320,32 @@ class OutdoorRecordedRoute(Node):
                     rclpy.spin_once(self, timeout_sec=0.1)
             if not rclpy.ok():
                 return 130
+
+        if not self._crawl_to_point_3(frame_id, base_frame):
+            return 4
+
+        if bool(self.get_parameter("return_to_start").value):
+            attempt = 0
+            while rclpy.ok():
+                if self._navigate(
+                    "startup position", *start_pose, False, frame_id, server_timeout
+                ):
+                    break
+                attempt += 1
+                self.get_logger().warning(
+                    "startup position did not complete; keeping this goal and waiting "
+                    f"{retry_wait_seconds:.1f} s before retry {attempt}"
+                )
+                deadline = time.monotonic() + retry_wait_seconds
+                while rclpy.ok() and time.monotonic() < deadline:
+                    rclpy.spin_once(self, timeout_sec=0.1)
+            if not rclpy.ok():
+                return 130
         self.get_logger().info("Recorded route completed")
         return 0
 
     def cancel(self):
+        self._stop_chassis()
         if self._goal_handle is not None:
             self.get_logger().warning("Canceling active navigation goal")
             cancel_future = self._goal_handle.cancel_goal_async()

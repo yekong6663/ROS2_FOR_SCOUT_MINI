@@ -1,15 +1,7 @@
-<!--
-  Outdoor lane-safe navigation tree.
-
-  Replan at 0.75 Hz so temporary detours clear promptly without continuously
-  loading the State Lattice planner and starving the controller on Jetson.
-  When FollowPath fails, wait and refresh the costmaps before replanning. If
-  that still fails within 2.5 metres of the goal, make one collision-checked,
-  low-speed retreat so the controller can approach the goal again.
--->
+<!-- Outdoor navigation tree for final positions that need precise alignment. -->
 <root main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
-    <RecoveryNode number_of_retries="4" name="NavigateOutdoorLaneSafe">
+    <RecoveryNode number_of_retries="4" name="NavigateOutdoorPrecision">
       <PipelineSequence name="NavigateWithStablePath">
         <RateController hz="0.75" name="ReplanAtThreeQuarterHz">
           <RecoveryNode number_of_retries="1" name="ComputePathToPose">
@@ -25,7 +17,7 @@
         <FollowPath
           path="{path}"
           controller_id="FollowPath"
-          goal_checker_id="normal_goal_checker"/>
+          goal_checker_id="precision_goal_checker"/>
       </PipelineSequence>
       <ReactiveFallback name="SafeRecoveryFallback">
         <GoalUpdated/>
