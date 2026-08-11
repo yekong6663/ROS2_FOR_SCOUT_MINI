@@ -21,6 +21,15 @@ ament_target_dependencies(scout_near_goal_condition_bt_node
   rclcpp
   tf2_ros)
 
+add_library(scout_slow_forward_bt_node SHARED
+  src/slow_forward_action.cpp)
+target_compile_definitions(scout_slow_forward_bt_node PRIVATE BT_PLUGIN_EXPORT)
+ament_target_dependencies(scout_slow_forward_bt_node
+  behaviortree_cpp_v3
+  geometry_msgs
+  rclcpp
+  sensor_msgs)
+
 add_library(scout_dynamic_obstacle_buffer_layer SHARED
   src/dynamic_obstacle_buffer_layer.cpp)
 ament_target_dependencies(scout_dynamic_obstacle_buffer_layer
@@ -39,13 +48,21 @@ install(DIRECTORY config launch behavior_trees
 
 install(PROGRAMS
   scripts/dock_to_recorded_point3.py
+  scripts/dock_to_indoor_grasp_point.py
+  scripts/dock_to_indoor_place_point.py
   scripts/go_to_recorded_pose.py
+  scripts/ensure_map_server_active.py
+  scripts/run_outdoor2_recorded_route.py
   scripts/run_outdoor_recorded_route.py
+  scripts/run_indoor_recorded_route.sh
+  scripts/run_indoor03_recorded_route.sh
+  scripts/run_indoor03_recorded_route.py
   scripts/relocalize_and_wait.py
   DESTINATION lib/${PROJECT_NAME})
 
 install(TARGETS
   scout_near_goal_condition_bt_node
+  scout_slow_forward_bt_node
   scout_dynamic_obstacle_buffer_layer
   LIBRARY DESTINATION lib)
 

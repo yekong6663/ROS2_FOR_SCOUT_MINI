@@ -85,6 +85,10 @@ def _launch_conversion(context):
             f"save_map_timeout:={save_timeout}",
             "-p",
             "map_subscribe_transient_local:=true",
+            "-p",
+            # Preserve the map-image convention used by navigation: only
+            # near-white pixels are free, while gray pixels remain unknown.
+            "free_thresh_default:=0.01",
         ],
         output="screen",
     )

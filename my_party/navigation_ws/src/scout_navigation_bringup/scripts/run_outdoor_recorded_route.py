@@ -69,6 +69,12 @@ class OutdoorRecordedRoute(Node):
         self.declare_parameter("front_stop_distance", 0.45)
         self.declare_parameter("front_half_width", 0.16)
         self.declare_parameter("front_min_points", 4)
+        # Temporary escape motion after precision parking.  Disable this when
+        # the arm task takes ownership of the chassis micro-adjustment.
+        self.declare_parameter("post_dock_forward_enabled", True)
+        self.declare_parameter("post_dock_forward_distance", 1.50)
+        self.declare_parameter("post_dock_forward_speed", 0.14)
+        self.declare_parameter("post_dock_forward_timeout", 20.0)
 
         self._client = ActionClient(self, NavigateToPose, "/navigate_to_pose")
         self._tf_buffer = Buffer()
@@ -255,6 +261,52 @@ class OutdoorRecordedRoute(Node):
         self.get_logger().error("Direct crawl timed out; vehicle stopped")
         return False
 
+    def _post_dock_forward(self, frame_id, base_frame):
+        """Temporary 1.5 m straight escape motion after final parking."""
+        if not bool(self.get_parameter("post_dock_forward_enabled").value):
+            return True
+        pose = self._current_pose(frame_id, base_frame)
+        if pose is None:
+            self.get_logger().error("No map-to-base transform for post-dock motion")
+            return False
+        start_x, start_y, _ = pose
+        heading = float(self.get_parameter("point_3_yaw").value)
+        distance = float(self.get_parameter("post_dock_forward_distance").value)
+        speed = float(self.get_parameter("post_dock_forward_speed").value)
+        timeout = float(self.get_parameter("post_dock_forward_timeout").value)
+        max_yaw_rate = float(self.get_parameter("max_yaw_rate").value)
+        align_tolerance = float(self.get_parameter("alignment_tolerance").value)
+        deadline = time.monotonic() + timeout
+        self.get_logger().info(
+            f"Temporary post-dock straight motion: {distance:.2f} m forward"
+        )
+        while rclpy.ok() and time.monotonic() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.05)
+            pose = self._current_pose(frame_id, base_frame)
+            if pose is None:
+                self._stop_chassis()
+                self.get_logger().error("Lost map-to-base transform; post-dock motion stopped")
+                return False
+            x, y, yaw = pose
+            progress = math.cos(heading) * (x - start_x) + math.sin(heading) * (y - start_y)
+            if progress >= distance:
+                self._stop_chassis()
+                self.get_logger().info("Temporary post-dock forward motion completed")
+                return True
+            yaw_error = math.atan2(math.sin(heading - yaw), math.cos(heading - yaw))
+            if self._front_blocked:
+                self._stop_chassis()
+                self.get_logger().warning("Object in narrow front safety corridor; post-dock motion stopped")
+                return False
+            command = Twist()
+            if abs(yaw_error) <= align_tolerance:
+                command.linear.x = min(speed, max(0.03, 0.6 * (distance - progress)))
+            command.angular.z = max(-max_yaw_rate, min(max_yaw_rate, 0.8 * yaw_error))
+            self._cmd_pub.publish(command)
+        self._stop_chassis()
+        self.get_logger().error("Temporary post-dock forward motion timed out; vehicle stopped")
+        return False
+
     def run(self):
         frame_id = str(self.get_parameter("frame_id").value)
         base_frame = str(self.get_parameter("base_frame").value)
@@ -323,6 +375,9 @@ class OutdoorRecordedRoute(Node):
 
         if not self._crawl_to_point_3(frame_id, base_frame):
             return 4
+
+        if not self._post_dock_forward(frame_id, base_frame):
+            return 5
 
         if bool(self.get_parameter("return_to_start").value):
             attempt = 0

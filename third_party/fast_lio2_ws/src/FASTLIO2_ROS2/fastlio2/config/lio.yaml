@@ -4,6 +4,13 @@ body_frame: body
 world_frame: lidar
 print_time_cost: false
 
+# Navigation must consume current scans, not replay a growing history when the
+# Jetson is temporarily busy. Keep at most two pending lidar frames. A single
+# FAST-LIO2 update takes about 2.7 seconds on this Jetson, so only suppress
+# output when it is genuinely stalled instead of suppressing every valid TF.
+max_lidar_buffer_size: 2
+max_output_delay: 5.0
+
 lidar_filter_num: 6
 lidar_min_range: 0.5
 lidar_max_range: 30.0

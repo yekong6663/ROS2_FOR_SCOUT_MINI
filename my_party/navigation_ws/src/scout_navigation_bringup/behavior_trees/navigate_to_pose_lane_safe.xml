@@ -1,12 +1,6 @@
-<!--
-  Stable lane-following tree for Scout Mini.
-
-  Replan at a low, stable rate so every controller retry receives a newly
-  computed non-empty path. The previous cached-path fallback could accept an
-  empty path after MPPI aborted and repeatedly resend it to FollowPath.
-  Recovery deliberately excludes Spin and BackUp: an unexpected in-place
-  rotation or blind reverse is unsafe near lane boundaries and on bridges.
--->
+<!-- Safe lane-following tree for Scout Mini.
+     A failed plan/controller may clear transient costmap data and replan, but
+     it must never bypass collision checking with an open-loop forward drive. -->
 <root main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
     <RecoveryNode number_of_retries="4" name="NavigateLaneSafe">
@@ -22,27 +16,22 @@
               service_name="global_costmap/clear_entirely_global_costmap"/>
           </RecoveryNode>
         </RateController>
-        <!--
-          Do not immediately retry FollowPath after clearing the costmap:
-          MPPI clears its failed input path while aborting, so that retry used
-          to receive zero poses. Let the outer recovery wait/clear, then return
-          through ComputePathToPose before FollowPath can run again.
-        -->
-        <FollowPath path="{path}" controller_id="FollowPath"/>
+        <FollowPath
+          path="{path}"
+          controller_id="FollowPath"
+          goal_checker_id="general_goal_checker"/>
       </PipelineSequence>
-      <ReactiveFallback name="SafeRecoveryFallback">
+      <ReactiveFallback name="ClearTransientObstaclesThenReplan">
         <GoalUpdated/>
-        <RoundRobin name="SafeRecoveryActions">
-          <Wait name="WaitForTemporaryObstacle" wait_duration="3"/>
-          <Sequence name="RefreshCostmaps">
-            <ClearEntireCostmap
-              name="ClearLocalCostmap"
-              service_name="local_costmap/clear_entirely_local_costmap"/>
-            <ClearEntireCostmap
-              name="ClearGlobalCostmap"
-              service_name="global_costmap/clear_entirely_global_costmap"/>
-          </Sequence>
-        </RoundRobin>
+        <Sequence>
+          <ClearEntireCostmap
+            name="ClearLocalCostmapAfterNavigationFailure"
+            service_name="local_costmap/clear_entirely_local_costmap"/>
+          <ClearEntireCostmap
+            name="ClearGlobalCostmapAfterNavigationFailure"
+            service_name="global_costmap/clear_entirely_global_costmap"/>
+          <Wait wait_duration="0.5"/>
+        </Sequence>
       </ReactiveFallback>
     </RecoveryNode>
   </BehaviorTree>

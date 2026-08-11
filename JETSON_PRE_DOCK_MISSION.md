@@ -93,6 +93,8 @@ colcon build --packages-select scout_navigation_bringup --symlink-install
 ```bash
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_01 can_port:=can2
+
+ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/indoor_03 can_port:=can2
 ```
 
 确认定位成功后，在另一个终端运行：

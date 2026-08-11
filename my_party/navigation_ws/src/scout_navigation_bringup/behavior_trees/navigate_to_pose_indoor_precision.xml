@@ -1,0 +1,37 @@
+<!-- Indoor precision tree. Recovery clears transient costmap data and
+     replans; it never drives open-loop toward a nearby table, wall or door. -->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="4" name="NavigateIndoorPrecision">
+      <PipelineSequence name="NavigateWithStablePath">
+        <RateController hz="0.5" name="ReplanAtHalfHz">
+          <RecoveryNode number_of_retries="1" name="ComputePathToPose">
+            <ComputePathToPose
+              goal="{goal}"
+              path="{path}"
+              planner_id="GridBased"/>
+            <ClearEntireCostmap
+              name="ClearGlobalCostmapAfterPlanningFailure"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+        <FollowPath
+          path="{path}"
+          controller_id="FollowPath"
+          goal_checker_id="precision_goal_checker"/>
+      </PipelineSequence>
+      <ReactiveFallback name="ClearTransientObstaclesThenReplan">
+        <GoalUpdated/>
+        <Sequence>
+          <ClearEntireCostmap
+            name="ClearLocalCostmapAfterNavigationFailure"
+            service_name="local_costmap/clear_entirely_local_costmap"/>
+          <ClearEntireCostmap
+            name="ClearGlobalCostmapAfterNavigationFailure"
+            service_name="global_costmap/clear_entirely_global_costmap"/>
+          <Wait wait_duration="0.5"/>
+        </Sequence>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

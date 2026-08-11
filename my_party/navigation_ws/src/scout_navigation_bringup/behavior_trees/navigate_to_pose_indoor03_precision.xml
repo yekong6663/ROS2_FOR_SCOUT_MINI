@@ -1,0 +1,34 @@
+<!-- Precise Nav2 transit to an indoor_03 staging pose.
+
+     Unlike the terminal crawl, this stage obeys the global/local costmaps.
+     It deliberately has no unconditional slow-forward action: the direct
+     low-speed motion starts only after the staging goal has succeeded. -->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="4" name="NavigateIndoor03StagingPrecisely">
+      <PipelineSequence name="NavigateWithStablePath">
+        <RateController hz="0.5" name="ReplanAtHalfHz">
+          <RecoveryNode number_of_retries="1" name="ComputePathToPose">
+            <ComputePathToPose
+              goal="{goal}"
+              path="{path}"
+              planner_id="GridBased"/>
+            <ClearEntireCostmap
+              name="ClearGlobalCostmapAfterPlanningFailure"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+        <FollowPath
+          path="{path}"
+          controller_id="FollowPath"
+          goal_checker_id="precision_goal_checker"/>
+      </PipelineSequence>
+      <ReactiveFallback name="ClearLocalCostmapThenReplan">
+        <GoalUpdated/>
+        <ClearEntireCostmap
+          name="ClearLocalCostmapAfterControlFailure"
+          service_name="local_costmap/clear_entirely_local_costmap"/>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

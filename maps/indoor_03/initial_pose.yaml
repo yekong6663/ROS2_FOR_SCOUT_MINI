@@ -1,0 +1,9 @@
+# Copy this file to <map_dir>/initial_pose.yaml and enter the robot's
+# approximate startup pose in the saved map frame. Angles are in radians.
+initial_pose:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  yaw: 0.0
+  pitch: 0.0
+  roll: 0.0

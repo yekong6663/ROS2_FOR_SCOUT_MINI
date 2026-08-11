@@ -7,4 +7,5 @@ occupied_thresh: 0.65
 # The XCF uses light gray for unexplored space and white for the driven lane.
 # With trinary mode, 0.25 incorrectly classified that gray background as free.
 # Only near-white pixels are navigable; gray remains unknown/non-traversable.
-free_thresh: 0.10
+# Only the original near-white road pixels are free; gray remains unknown.
+free_thresh: 0.01

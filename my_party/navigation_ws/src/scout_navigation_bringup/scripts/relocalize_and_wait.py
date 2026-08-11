@@ -30,6 +30,13 @@ class RelocalizationGate(Node):
         # border even when the physical footprint is in the surveyed lane.
         # More than this remains a hard startup safety failure.
         self.declare_parameter("max_blocked_samples", 3)
+        # The projected PNG contains a very thin anti-aliased fringe beside
+        # otherwise white floor cells.  It must remain non-traversable in the
+        # Nav2 map, but a handful of these near-white samples under the padded
+        # footprint must not prevent the entire navigation stack from opening.
+        # Darker gray/black cells continue to use max_blocked_samples above.
+        self.declare_parameter("edge_noise_occupancy_threshold", 0.04)
+        self.declare_parameter("max_edge_noise_samples", 12)
         self.declare_parameter("x", 0.0)
         self.declare_parameter("y", 0.0)
         self.declare_parameter("z", 0.0)
@@ -135,7 +142,11 @@ class RelocalizationGate(Node):
 
         checked = 0
         blocked = 0
+        edge_noise = 0
         first_blocked = None
+        edge_noise_threshold = float(
+            self.get_parameter("edge_noise_occupancy_threshold").value
+        )
         for x_index in range(x_samples + 1):
             local_x = -half_length + (2.0 * half_length * x_index / x_samples)
             for y_index in range(y_samples + 1):
@@ -153,6 +164,7 @@ class RelocalizationGate(Node):
                 checked += 1
 
                 is_free = False
+                occupancy = None
                 if 0 <= column < width and 0 <= row < height:
                     value = pixels[column, row]
                     occupancy = (
@@ -160,28 +172,47 @@ class RelocalizationGate(Node):
                     )
                     is_free = occupancy < free_threshold
                 if not is_free:
-                    blocked += 1
-                    if first_blocked is None:
-                        first_blocked = (world_x, world_y)
+                    if (
+                        occupancy is not None
+                        and occupancy <= edge_noise_threshold
+                    ):
+                        edge_noise += 1
+                    else:
+                        blocked += 1
+                        if first_blocked is None:
+                            first_blocked = (world_x, world_y)
 
         max_blocked_samples = int(
             self.get_parameter("max_blocked_samples").value
         )
-        if blocked > max_blocked_samples:
+        max_edge_noise_samples = int(
+            self.get_parameter("max_edge_noise_samples").value
+        )
+        if (
+            blocked > max_blocked_samples
+            or edge_noise > max_edge_noise_samples
+        ):
+            first_blocked_text = (
+                f" (first hard cell at x={first_blocked[0]:.3f}, "
+                f"y={first_blocked[1]:.3f})"
+                if first_blocked is not None
+                else ""
+            )
             self.get_logger().error(
                 "Relocalization result is unsafe: map pose "
                 f"x={robot_x:.3f}, y={robot_y:.3f}, yaw={robot_yaw:.3f}; "
-                f"{blocked}/{checked} padded-footprint samples are gray, "
-                f"occupied, or outside the map (first at "
-                f"x={first_blocked[0]:.3f}, y={first_blocked[1]:.3f})."
+                f"{blocked} hard blocked samples (limit "
+                f"{max_blocked_samples}) and {edge_noise} near-white edge "
+                f"samples (limit {max_edge_noise_samples}) out of "
+                f"{checked}{first_blocked_text}."
             )
             return False
 
-        if blocked:
+        if blocked or edge_noise:
             self.get_logger().warning(
-                "Tolerating "
-                f"{blocked}/{checked} padded-footprint samples at the map "
-                "raster edge; this is within the configured three-cell limit"
+                f"Tolerating {blocked} hard and {edge_noise} near-white "
+                f"padded-footprint samples out of {checked}; both are within "
+                "their configured startup limits"
             )
 
         self.get_logger().info(

@@ -147,7 +147,10 @@ ros2 launch scout_base scout_mini_base.launch.py port_name:=can2
 
 ```bash
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
-ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_01 can_port:=can2
+ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02 can_port:=can2
+
+# 室内
+ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/indoor_03 can_port:=can2
 ```
 
 可替换的地图目录：
@@ -156,6 +159,7 @@ ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto
 ~/auto/ROS2_FOR_SCOUT_MINI/maps/indoor_01
 ~/auto/ROS2_FOR_SCOUT_MINI/maps/site_01
 ~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_01
+~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02
 ```
 
 启动后依次确认雷达点云、FAST-LIO2 里程计、`/scout_status` 与重定位状态正常，再发送导航目标。

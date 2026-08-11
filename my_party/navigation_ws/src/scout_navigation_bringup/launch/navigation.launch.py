@@ -48,16 +48,16 @@ def _launch_navigation(context):
         ],
     )
 
-    map_lifecycle_manager = Node(
-        package="nav2_lifecycle_manager",
-        executable="lifecycle_manager",
-        name="lifecycle_manager_map",
+    map_activation_guard = Node(
+        package="scout_navigation_bringup",
+        executable="ensure_map_server_active.py",
+        name="map_server_activation_guard",
         output="screen",
         parameters=[
             {
                 "use_sim_time": use_sim_time,
-                "autostart": autostart,
-                "node_names": ["map_server"],
+                "map_server_name": "/map_server",
+                "timeout": 45.0,
             }
         ],
     )
@@ -74,7 +74,7 @@ def _launch_navigation(context):
         }.items(),
     )
 
-    return [map_server, map_lifecycle_manager, navigation]
+    return [map_server, map_activation_guard, navigation]
 
 
 def generate_launch_description():

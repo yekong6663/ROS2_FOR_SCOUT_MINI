@@ -56,7 +56,16 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /local_plan
       Value: true
-    - Alpha: 0.35
+    - Class: rviz_default_plugins/Axes
+      Enabled: true
+      Length: 0.8
+      Name: Robot Position (base_link)
+      Radius: 0.06
+      Reference Frame: base_link
+      Value: true
+    # Keep both costmaps visible by default so static inflation and live lidar
+    # obstacles can be inspected while navigating.
+    - Alpha: 0.10
       Class: rviz_default_plugins/Map
       Color Scheme: costmap
       Draw Behind: false
@@ -70,7 +79,7 @@ Visualization Manager:
         Value: /global_costmap/costmap
       Use Timestamp: false
       Value: true
-    - Alpha: 0.5
+    - Alpha: 0.18
       Class: rviz_default_plugins/Map
       Color Scheme: costmap
       Draw Behind: false
@@ -112,11 +121,11 @@ Visualization Manager:
       Class: rviz_default_plugins/TopDownOrtho
       Invert Z Axis: false
       Name: Current View
-      Scale: 35
+      Scale: 17
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: -2.275
-      Y: 7.795
+      X: 8.430
+      Y: -4.400
     Saved: ~
 Window Geometry:
   Height: 900

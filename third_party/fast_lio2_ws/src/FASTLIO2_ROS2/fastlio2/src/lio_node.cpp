@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cstddef>
 #include <mutex>
 #include <vector>
 #include <queue>
@@ -29,6 +31,8 @@ struct NodeConfig
     std::string body_frame = "body";
     std::string world_frame = "lidar";
     bool print_time_cost = false;
+    size_t max_lidar_buffer_size = 2;
+    double max_output_delay = 5.0;
 };
 struct StateData
 {
@@ -79,7 +83,7 @@ public:
         // Navigation needs the newest observation, not a large reliable
         // backlog of old clouds. A depth of 10000 allowed delayed obstacle
         // frames to outlive the TF cache when a consumer briefly fell behind.
-        const auto realtime_qos = rclcpp::QoS(rclcpp::KeepLast(10));
+        const auto realtime_qos = rclcpp::QoS(rclcpp::KeepLast(2));
         m_body_cloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("body_cloud", realtime_qos);
         m_world_cloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("world_cloud", realtime_qos);
         m_path_pub = this->create_publisher<nav_msgs::msg::Path>("lio_path", realtime_qos);
@@ -117,6 +121,16 @@ public:
         m_node_config.body_frame = config["body_frame"].as<std::string>();
         m_node_config.world_frame = config["world_frame"].as<std::string>();
         m_node_config.print_time_cost = config["print_time_cost"].as<bool>();
+        if (config["max_lidar_buffer_size"])
+        {
+            m_node_config.max_lidar_buffer_size = std::max<size_t>(
+                1, config["max_lidar_buffer_size"].as<size_t>());
+        }
+        if (config["max_output_delay"])
+        {
+            m_node_config.max_output_delay = std::max(
+                0.0, config["max_output_delay"].as<double>());
+        }
 
         m_builder_config.lidar_filter_num = config["lidar_filter_num"].as<int>();
         m_builder_config.lidar_min_range = config["lidar_min_range"].as<double>();
@@ -183,6 +197,34 @@ public:
         }
         m_state_data.lidar_buffer.emplace_back(timestamp, cloud);
         m_state_data.last_lidar_time = timestamp;
+
+        // Never replay an unbounded history of lidar frames. If syncPackage()
+        // has already selected the front frame, keep that frame stable while
+        // it waits for matching IMU data and discard the oldest *waiting*
+        // frame behind it. Resetting lidar_pushed on every incoming scan can
+        // starve the estimator forever when lidar arrives faster than FAST-LIO
+        // can process it, leaving the lidar -> body TF unpublished.
+        if (m_state_data.lidar_buffer.size() > m_node_config.max_lidar_buffer_size)
+        {
+            const size_t dropped =
+                m_state_data.lidar_buffer.size() - m_node_config.max_lidar_buffer_size;
+            while (m_state_data.lidar_buffer.size() > m_node_config.max_lidar_buffer_size)
+            {
+                if (m_state_data.lidar_pushed)
+                {
+                    m_state_data.lidar_buffer.erase(
+                        std::next(m_state_data.lidar_buffer.begin()));
+                }
+                else
+                {
+                    m_state_data.lidar_buffer.pop_front();
+                }
+            }
+            RCLCPP_WARN_THROTTLE(
+                this->get_logger(), *this->get_clock(), 2000,
+                "FAST-LIO2 dropped %zu queued lidar frame(s) to keep navigation current",
+                dropped);
+        }
     }
 
     bool syncPackage()
@@ -304,15 +346,28 @@ public:
         auto t2 = std::chrono::high_resolution_clock::now();
         const double output_delay =
             this->get_clock()->now().seconds() - m_package.cloud_end_time;
-        if (output_delay > 0.5)
+        if (output_delay > m_node_config.max_output_delay)
         {
             RCLCPP_WARN_THROTTLE(
                 this->get_logger(),
                 *this->get_clock(),
                 2000,
                 "FAST-LIO2 output is %.3f s behind ROS time; keep navigation "
-                "speed low until the delay is below 0.5 s",
-                output_delay);
+                "speed low until the delay is below %.3f s",
+                output_delay, m_node_config.max_output_delay);
+        }
+
+        // Continue consuming delayed input so the estimator can catch up, but
+        // do not expose historical poses or clouds to navigation.  Publishing
+        // them makes obstacles that have already moved appear repeatedly and
+        // prevents costmap raytracing from clearing their old cells.
+        if (output_delay > m_node_config.max_output_delay)
+        {
+            RCLCPP_WARN_THROTTLE(
+                this->get_logger(), *this->get_clock(), 2000,
+                "Suppressing stale FAST-LIO2 navigation output (delay %.3f s, limit %.3f s)",
+                output_delay, m_node_config.max_output_delay);
+            return;
         }
 
         if (m_node_config.print_time_cost)

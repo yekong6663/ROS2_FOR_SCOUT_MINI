@@ -16,6 +16,7 @@ import rclpy
 from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import Twist
 from nav2_msgs.action import NavigateToPose
+from nav_msgs.msg import Odometry
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -49,6 +50,15 @@ class TwoStagePoint3Dock(Node):
         self.declare_parameter("crawl_timeout", 45.0)
         self.declare_parameter("max_yaw_rate", 0.16)
         self.declare_parameter("alignment_tolerance", 0.04)
+        self.declare_parameter("odom_topic", "/odom")
+        self.declare_parameter("odom_stale_timeout", 0.5)
+        self.declare_parameter("localization_settle_time", 1.5)
+        # Zero means wait indefinitely while stopped. Route runners use this
+        # so a transient relocalization correction cannot terminate a long
+        # pickup/place mission after all previous stages have succeeded.
+        self.declare_parameter("localization_wait_timeout", 30.0)
+        self.declare_parameter("max_map_odom_drift_m", 0.08)
+        self.declare_parameter("max_map_odom_drift_deg", 3.0)
         self.declare_parameter("front_safety_enabled", True)
         self.declare_parameter("front_stop_distance", 0.45)
         self.declare_parameter("front_half_width", 0.16)
@@ -64,6 +74,13 @@ class TwoStagePoint3Dock(Node):
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, self)
         self._front_blocked = False
+        self._latest_odom = None
+        self._odom_sub = self.create_subscription(
+            Odometry,
+            str(self.get_parameter("odom_topic").value),
+            self._odom_callback,
+            20,
+        )
         self._front_sub = self.create_subscription(
             PointCloud2, "/fastlio2/body_cloud", self._front_cloud_callback, 10
         )
@@ -95,6 +112,79 @@ class TwoStagePoint3Dock(Node):
         except Exception as error:
             self.get_logger().warn(f"Front safety cloud parse failed: {error}")
         self._front_blocked = False
+
+    def _odom_callback(self, message):
+        p = message.pose.pose.position
+        q = message.pose.pose.orientation
+        yaw = math.atan2(
+            2.0 * (q.w * q.z + q.x * q.y),
+            1.0 - 2.0 * (q.y * q.y + q.z * q.z),
+        )
+        self._latest_odom = (p.x, p.y, yaw, time.monotonic())
+
+    def _odom_pose(self):
+        sample = self._latest_odom
+        if sample is None:
+            return None
+        if time.monotonic() - sample[3] > float(
+            self.get_parameter("odom_stale_timeout").value
+        ):
+            return None
+        return sample[:3]
+
+    @staticmethod
+    def _map_to_odom_signature(map_pose, odom_pose):
+        """Return the planar map->odom transform implied by two poses."""
+        map_x, map_y, map_yaw = map_pose
+        odom_x, odom_y, odom_yaw = odom_pose
+        yaw = normalize(map_yaw - odom_yaw)
+        c = math.cos(yaw)
+        s = math.sin(yaw)
+        return (
+            map_x - (c * odom_x - s * odom_y),
+            map_y - (s * odom_x + c * odom_y),
+            yaw,
+        )
+
+    def _stable_crawl_start(self):
+        """Require map localization to settle, then lock an odometric start."""
+        settle_s = max(
+            0.2, float(self.get_parameter("localization_settle_time").value)
+        )
+        deadline = time.monotonic() + settle_s
+        signatures = []
+        latest = None
+        while rclpy.ok() and time.monotonic() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.05)
+            map_pose = self._pose()
+            odom_pose = self._odom_pose()
+            if map_pose is None or odom_pose is None:
+                continue
+            latest = (map_pose, odom_pose)
+            signatures.append(self._map_to_odom_signature(map_pose, odom_pose))
+        if latest is None or len(signatures) < 3:
+            self.get_logger().error(
+                "Cannot start direct crawl: map or odometry feedback is unavailable"
+            )
+            return None
+        ref_x, ref_y, ref_yaw = signatures[0]
+        translation_drift = max(
+            math.hypot(x - ref_x, y - ref_y) for x, y, _yaw in signatures
+        )
+        yaw_drift_deg = max(
+            abs(math.degrees(normalize(yaw - ref_yaw)))
+            for _x, _y, yaw in signatures
+        )
+        max_translation = float(self.get_parameter("max_map_odom_drift_m").value)
+        max_yaw = float(self.get_parameter("max_map_odom_drift_deg").value)
+        if translation_drift > max_translation or yaw_drift_deg > max_yaw:
+            self.get_logger().error(
+                "Cannot start direct crawl: map localization is still jumping "
+                f"(map-odom drift={translation_drift:.3f}m/{yaw_drift_deg:.2f}deg, "
+                f"limits={max_translation:.3f}m/{max_yaw:.2f}deg)"
+            )
+            return None
+        return latest
 
     def _stop(self):
         self._cmd_pub.publish(Twist())
@@ -173,26 +263,73 @@ class TwoStagePoint3Dock(Node):
         alignment_tolerance = float(
             self.get_parameter("alignment_tolerance").value
         )
+        wait_timeout = float(
+            self.get_parameter("localization_wait_timeout").value
+        )
+        wait_deadline = (
+            time.monotonic() + wait_timeout if wait_timeout > 0.0 else None
+        )
+        start = None
+        while rclpy.ok() and start is None:
+            self._stop()
+            start = self._stable_crawl_start()
+            if start is not None:
+                break
+            if wait_deadline is not None and time.monotonic() >= wait_deadline:
+                self.get_logger().error(
+                    "Localization did not stabilize before the direct-crawl "
+                    "wait timeout; vehicle remains stopped"
+                )
+                return False
+            self.get_logger().warning(
+                "Holding at the staging pose until map localization is stable; "
+                "the direct approach will resume automatically"
+            )
+        if start is None:
+            self._stop()
+            return False
+        map_start, odom_start = start
+        map_x, map_y, map_yaw = map_start
+        odom_x, odom_y, odom_yaw = odom_start
+        dx, dy = goal_x - map_x, goal_y - map_y
+        target_travel = math.cos(goal_yaw) * dx + math.sin(goal_yaw) * dy
+        initial_lateral_error = -math.sin(goal_yaw) * dx + math.cos(goal_yaw) * dy
+        target_odom_yaw = normalize(odom_yaw + normalize(goal_yaw - map_yaw))
+        if target_travel <= -position_tolerance:
+            self._stop()
+            self.get_logger().error(
+                "Direct goal is already behind at crawl start; refusing to reverse "
+                f"(forward={target_travel:.3f}m lateral={initial_lateral_error:.3f}m)"
+            )
+            return False
+
         deadline = time.monotonic() + timeout
         self.get_logger().info(
-            "Starting direct final crawl: local costmap is ignored; "
-            "narrow forward emergency stop remains enabled"
+            "Starting odometry-locked direct final crawl: local costmap is ignored; "
+            "map relocalization jumps are isolated; narrow forward emergency stop "
+            f"remains enabled (travel={target_travel:.3f}m)"
         )
 
         while rclpy.ok() and time.monotonic() < deadline:
             rclpy.spin_once(self, timeout_sec=0.05)
-            pose = self._pose()
+            pose = self._odom_pose()
             if pose is None:
                 self._stop()
-                self.get_logger().error("Lost map-to-base transform; direct crawl stopped")
+                self.get_logger().error("Lost fresh odometry; direct crawl stopped")
                 return False
             x, y, yaw = pose
-            dx, dy = goal_x - x, goal_y - y
-            distance = math.hypot(dx, dy)
-            yaw_error = normalize(goal_yaw - yaw)
-            if distance <= position_tolerance and abs(yaw_error) <= yaw_tolerance:
+            traveled = (
+                math.cos(target_odom_yaw) * (x - odom_x)
+                + math.sin(target_odom_yaw) * (y - odom_y)
+            )
+            forward_error = target_travel - traveled
+            yaw_error = normalize(target_odom_yaw - yaw)
+            if abs(forward_error) <= position_tolerance and abs(yaw_error) <= yaw_tolerance:
                 self._stop()
-                self.get_logger().info("Reached recorded point 3 with precision tolerance")
+                self.get_logger().info(
+                    "Reached recorded point 3 using odometry-locked precision "
+                    f"(traveled={traveled:.3f}m remaining={forward_error:.3f}m)"
+                )
                 return True
 
             # Nav2's normal staging goal permits a relatively loose yaw error.
@@ -206,13 +343,15 @@ class TwoStagePoint3Dock(Node):
                 self._cmd_pub.publish(command)
                 continue
 
-            # Evaluate progress in the fixed parking direction, never from a
-            # transient steering angle.  A negative value would require a
-            # reverse maneuver, which this terminal mode intentionally forbids.
-            forward_error = math.cos(goal_yaw) * dx + math.sin(goal_yaw) * dy
-            if forward_error <= 0.0:
+            # A small negative remainder is accepted by the position-tolerance
+            # branch above. A larger odometric overshoot remains a hard stop;
+            # this terminal mode never commands reverse motion.
+            if forward_error < -position_tolerance:
                 self._stop()
-                self.get_logger().error("Direct goal is no longer in front; stopping without reversing")
+                self.get_logger().error(
+                    "Odometry reports final-crawl overshoot; stopping without "
+                    f"reversing (traveled={traveled:.3f}m target={target_travel:.3f}m)"
+                )
                 return False
             if self._front_blocked:
                 self._stop()

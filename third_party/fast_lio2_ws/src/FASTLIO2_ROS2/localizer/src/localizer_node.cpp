@@ -61,6 +61,10 @@ public:
         m_localization_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
         m_sensor_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
         m_tf_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+        // Keep service replies independent from the expensive ICP callback.  The
+        // relocalization gate polls relocalize_check while alignment is running;
+        // putting both in m_localization_group can starve that reply forever.
+        m_service_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
         rclcpp::SubscriptionOptions sensor_options;
         sensor_options.callback_group = m_sensor_group;
@@ -79,13 +83,13 @@ public:
             "relocalize",
             std::bind(&LocalizerNode::relocCB, this, std::placeholders::_1, std::placeholders::_2),
             rmw_qos_profile_services_default,
-            m_localization_group);
+            m_service_group);
 
         m_reloc_check_srv = this->create_service<interface::srv::IsValid>(
             "relocalize_check",
             std::bind(&LocalizerNode::relocCheckCB, this, std::placeholders::_1, std::placeholders::_2),
             rmw_qos_profile_services_default,
-            m_localization_group);
+            m_service_group);
 
         m_map_cloud_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("map_cloud", 10);
 
@@ -333,6 +337,7 @@ private:
     rclcpp::CallbackGroup::SharedPtr m_localization_group;
     rclcpp::CallbackGroup::SharedPtr m_sensor_group;
     rclcpp::CallbackGroup::SharedPtr m_tf_group;
+    rclcpp::CallbackGroup::SharedPtr m_service_group;
     std::shared_ptr<message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, nav_msgs::msg::Odometry>>> m_sync;
     std::shared_ptr<tf2_ros::TransformBroadcaster> m_tf_broadcaster;
     rclcpp::Service<interface::srv::Relocalize>::SharedPtr m_reloc_srv;

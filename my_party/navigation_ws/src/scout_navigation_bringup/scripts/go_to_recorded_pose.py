@@ -23,6 +23,7 @@ class GoToRecordedPose(Node):
         self.declare_parameter("y", 6.797518)
         self.declare_parameter("yaw", 1.416757)
         self.declare_parameter("server_timeout", 30.0)
+        self.declare_parameter("behavior_tree", "")
 
         self._client = ActionClient(self, NavigateToPose, "/navigate_to_pose")
         self._goal_handle = None
@@ -54,6 +55,7 @@ class GoToRecordedPose(Node):
         y = float(self.get_parameter("y").value)
         yaw = float(self.get_parameter("yaw").value)
         timeout = float(self.get_parameter("server_timeout").value)
+        behavior_tree = str(self.get_parameter("behavior_tree").value)
 
         if not self._wait_for_server(timeout):
             self.get_logger().error(
@@ -70,11 +72,15 @@ class GoToRecordedPose(Node):
         goal.pose.pose.position.z = 0.0
         goal.pose.pose.orientation.z = math.sin(yaw * 0.5)
         goal.pose.pose.orientation.w = math.cos(yaw * 0.5)
+        if behavior_tree:
+            goal.behavior_tree = behavior_tree
 
         self.get_logger().info(
             f"Sending navigation goal in {frame_id}: "
             f"x={x:.6f}, y={y:.6f}, yaw={yaw:.6f} rad"
         )
+        if behavior_tree:
+            self.get_logger().info(f"Using behavior tree: {behavior_tree}")
         send_future = self._client.send_goal_async(
             goal, feedback_callback=self._feedback_callback
         )
