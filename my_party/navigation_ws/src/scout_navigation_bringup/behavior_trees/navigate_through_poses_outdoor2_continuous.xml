@@ -1,0 +1,38 @@
+<!-- Continuous outdoor_02 multi-waypoint navigation for ordinary route legs.
+     Passed intermediate poses are removed instead of being treated as a stop
+     and a new standalone navigation task. -->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="4" name="NavigateOutdoor2Continuous">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="0.75" name="ReplanAtThreeQuarterHz">
+          <RecoveryNode number_of_retries="1" name="ComputePathThroughPoses">
+            <ReactiveSequence>
+              <!-- Ordinary route points are waypoints.  Once the chassis is
+                   within 0.60 m, retain forward progress instead of turning
+                   back after a temporary avoidance manoeuvre. -->
+              <RemovePassedGoals input_goals="{goals}" output_goals="{goals}" radius="0.60"/>
+              <ComputePathThroughPoses goals="{goals}" path="{path}" planner_id="GridBased"/>
+            </ReactiveSequence>
+            <ClearEntireCostmap name="ClearGlobalCostmapAfterPlanningFailure"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+        <FollowPath path="{path}" controller_id="FollowPath"
+          goal_checker_id="normal_goal_checker"/>
+      </PipelineSequence>
+      <ReactiveFallback name="SafeRecoveryFallback">
+        <GoalUpdated/>
+        <RoundRobin name="SafeRecoveryActions">
+          <Wait name="WaitForTemporaryObstacle" wait_duration="1"/>
+          <Sequence name="RefreshCostmaps">
+            <ClearEntireCostmap name="ClearLocalCostmap"
+              service_name="local_costmap/clear_entirely_local_costmap"/>
+            <ClearEntireCostmap name="ClearGlobalCostmap"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+          </Sequence>
+        </RoundRobin>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

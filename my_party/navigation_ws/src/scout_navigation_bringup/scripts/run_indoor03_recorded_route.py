@@ -156,10 +156,24 @@ class Indoor03Route(TwoStagePoint3Dock):
                 "target_item_id": "",
                 "prompt": "",
                 "execute": True,
+                "speed": 25,
+                "observation_speed": 25,
+                # Keep card recognition, target-item scanning and the eventual
+                # box search on the active right-side camera geometry even if
+                # a previous manual dashboard run changed these parameters.
+                "observe_pose": [0.0, -35.5, 491.1, 180.0, 67.77, 89.97],
+                "placement_observe_pose": [0.0, -35.5, 491.1, 180.0, 67.77, 89.97],
                 "confirm": False,
                 "place_after_grasp": False,
                 "base_grasp_scan_enabled": True,
+                "target_card_base_search_enabled": True,
                 "move_to_placement_observation_after_grasp": True,
+                # Keep the handoff on the live-preview scan path: Scout can
+                # stop inside a bounded scan segment when the catalog target
+                # reaches the calibrated camera-center window.  The arm still
+                # performs a fresh full RGB-D confirmation before grasping.
+                "continuous_search_enabled": True,
+                "continuous_search_stop_on_center": True,
             }
         )
         sequence_before = self._pipeline_result_sequence
@@ -201,8 +215,20 @@ class Indoor03Route(TwoStagePoint3Dock):
         self._set_pipeline_parameters(
             {
                 "target_item_id": self._target_item_id,
+                "speed": 25,
+                "observation_speed": 25,
+                "observe_pose": [0.0, -35.5, 491.1, 180.0, 67.77, 89.97],
+                "placement_observe_pose": [0.0, -35.5, 491.1, 180.0, 67.77, 89.97],
                 "base_target_alignment_enabled": True,
                 "base_aligned_place_enabled": False,
+                # Practical horizontal parking margin for the fixed release
+                # pose. The arm still requires a confident requested label.
+                "base_target_center_tolerance_norm": 0.08,
+                # Use the same live preview during box-label search so the
+                # correct labelled box is centered and Scout stops without a
+                # complete six-label row scan.
+                "continuous_search_enabled": True,
+                "continuous_search_stop_on_center": True,
             }
         )
         try:
@@ -410,7 +436,7 @@ class Indoor03Route(TwoStagePoint3Dock):
         if not self.dock(
             "取件",
             (10.455, -5.603, -0.092),
-            (11.292, -5.682, -0.094),
+            (11.289, -5.690, -0.100),
         ):
             return 130
 

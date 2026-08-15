@@ -43,16 +43,21 @@ ament_target_dependencies(scout_dynamic_obstacle_buffer_layer
   tf2_ros)
 pluginlib_export_plugin_description_file(nav2_costmap_2d dynamic_obstacle_buffer_plugins.xml)
 
+add_executable(obstacle_cloud_filter src/obstacle_cloud_filter.cpp)
+ament_target_dependencies(obstacle_cloud_filter rclcpp sensor_msgs)
+
 install(DIRECTORY config launch behavior_trees
   DESTINATION share/${PROJECT_NAME})
 
 install(PROGRAMS
   scripts/dock_to_recorded_point3.py
+  scripts/safe_startup_forward.py
   scripts/dock_to_indoor_grasp_point.py
   scripts/dock_to_indoor_place_point.py
   scripts/go_to_recorded_pose.py
   scripts/ensure_map_server_active.py
   scripts/run_outdoor2_recorded_route.py
+  scripts/run_outdoor2_recorded_route.sh
   scripts/run_outdoor_recorded_route.py
   scripts/run_indoor_recorded_route.sh
   scripts/run_indoor03_recorded_route.sh
@@ -65,6 +70,9 @@ install(TARGETS
   scout_slow_forward_bt_node
   scout_dynamic_obstacle_buffer_layer
   LIBRARY DESTINATION lib)
+
+install(TARGETS obstacle_cloud_filter
+  RUNTIME DESTINATION lib/${PROJECT_NAME})
 
 install(FILES dynamic_obstacle_buffer_plugins.xml
   DESTINATION share/${PROJECT_NAME})

@@ -149,6 +149,8 @@ ros2 launch scout_base scout_mini_base.launch.py port_name:=can2
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02 can_port:=can2
 
+ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_03 can_port:=can2
+
 # 室内
 ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/indoor_03 can_port:=can2
 ```

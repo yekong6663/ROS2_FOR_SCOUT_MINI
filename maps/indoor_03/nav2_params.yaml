@@ -87,8 +87,10 @@ controller_server:
       plugin: nav2_controller::SimpleGoalChecker
       # Latch the reached position while the final heading converges.
       stateful: true
-      xy_goal_tolerance: 0.15
-      yaw_goal_tolerance: 0.25
+      # Transit points do not require docking-level precision. This avoids
+      # needless final oscillation before the following route stage begins.
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.40
 
     # Only use this checker for grasp/place endpoints.  Transit and turning
     # points retain the normal tolerance so ordinary navigation stays robust.

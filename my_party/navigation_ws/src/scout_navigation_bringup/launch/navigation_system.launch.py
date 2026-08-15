@@ -188,6 +188,28 @@ def _launch_navigation_system(context):
         condition=IfCondition(start_localization),
     )
 
+    obstacle_cloud_filter = Node(
+        package="scout_navigation_bringup",
+        executable="obstacle_cloud_filter",
+        name="obstacle_cloud_filter",
+        output="screen",
+        parameters=[
+            {
+                "input_topic": "/fastlio2/body_cloud",
+                "output_topic": "/nav/filtered_obstacle_cloud",
+                # Body-cloud heights are relative to the lidar. The cut rejects
+                # ground/vehicle returns below the lidar and high tree foliage.
+                "min_obstacle_height": -0.05,
+                "max_obstacle_height": 1.35,
+                "min_range": 0.35,
+                "max_range": 5.0,
+                "cell_size": 0.25,
+                "min_points_per_cell": 8,
+            }
+        ],
+        condition=IfCondition(start_localization),
+    )
+
     rviz = Node(
         package="rviz2",
         executable="rviz2",
@@ -316,6 +338,7 @@ def _launch_navigation_system(context):
         robot_tf,
         fastlio,
         localizer,
+        obstacle_cloud_filter,
         rviz,
         relocalization_gate,
     ]
