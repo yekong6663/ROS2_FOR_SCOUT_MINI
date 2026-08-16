@@ -223,7 +223,8 @@ class Indoor03Route(TwoStagePoint3Dock):
                 "base_aligned_place_enabled": False,
                 # Practical horizontal parking margin for the fixed release
                 # pose. The arm still requires a confident requested label.
-                "base_target_center_tolerance_norm": 0.08,
+                "base_target_center_tolerance_norm": 0.12,
+                "label_marker_detection_enabled": False,
                 # Use the same live preview during box-label search so the
                 # correct labelled box is centered and Scout stops without a
                 # complete six-label row scan.

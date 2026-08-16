@@ -36,6 +36,7 @@ from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 from tf2_ros import Buffer, TransformException, TransformListener
+from dock_to_recorded_point3 import TwoStagePoint3Dock
 
 
 def normalize(angle):
@@ -53,13 +54,13 @@ OUTBOUND_POINTS = [
 ]
 
 WORK_CYCLE_POINTS = [
-    (9, -18.638, 3.721, 3.108, "待抓取点"),
-    (10, -20.470, 3.775, 3.092, "抓取点"),
+    (9, -18.626, 3.644, 3.099, "抓取预停点（2026-08-16 重录）"),
+    (10, -20.402, 3.727, 3.079, "抓取点（2026-08-16 重录）"),
     (11, -30.113, 3.611, 3.093, "行动一"),
     (12, -21.867, -3.865, -0.090, "行动二（2026-08-16 记录）"),
-    (13, -13.891, 2.446, 3.079, "行动三（2026-08-16 重录）"),
-    (14, -19.216, 3.669, 3.086, "放置预停点（2026-08-16 重录）"),
-    (15, -20.658, 3.757, 3.079, "放置点（2026-08-16 重录）"),
+    (13, -8.372, -0.762, 3.103, "行动三（2026-08-16 重录）"),
+    (14, -18.626, 3.644, 3.099, "放置预停点（2026-08-16 重录）"),
+    (15, -20.784, 3.745, 3.078, "放置点（2026-08-16 重录）"),
 ]
 
 SOURCE_ROOT = Path(
@@ -76,35 +77,51 @@ PRECISION_POINT_NUMBERS = {9, 10, 14, 15}
 RED_FLAG_GATE = "/home/nvidia/auto/Robot_arm/source/scripts/wait_for_red_flag_start.sh"
 STARTUP_FORWARD_HELPER = SOURCE_ROOT / "scripts/safe_startup_forward.py"
 
-class Outdoor2RecordedRoute(Node):
-    """Visit each currently enabled outdoor_02 point in order."""
+class Outdoor2RecordedRoute(TwoStagePoint3Dock):
+    """Visit each currently enabled outdoor_02 point in order.
+
+    Inherits TwoStagePoint3Dock so the staging navigation and odometry-locked
+    crawl run in-process (like indoor_03): the TF buffer, NavigateToPose
+    client and /cmd_vel_nav publisher stay warm for the whole mission, so a
+    red-flag trigger dispatches navigation immediately with no subprocess
+    cold start and no "no transform" stall.
+    """
 
     def __init__(self):
-        super().__init__("run_outdoor2_recorded_route")
-        self.declare_parameter("frame_id", "map")
+        # TwoStagePoint3Dock.__init__ already declares the dock parameters
+        # (staging_x/y/yaw, goal_x/y/yaw, tolerances, crawl speeds, odom/
+        # localization params) and creates the shared members we reuse:
+        # self._navigator (NavigateToPose client), self._cmd_pub (/cmd_vel_nav),
+        # self._tf_buffer/_tf_listener, /odom and /fastlio2/body_cloud
+        # subscriptions.
+        super().__init__()
+        # The dock node name is fixed; keep log clarity by overriding the
+        # reported name only in messages via this label.
+        self._route_label = "run_outdoor2_recorded_route"
+        # dock defaults localization_wait_timeout to 30 s; outdoor_02 wants to
+        # wait indefinitely at staging, so push 0.0 now (and before each dock).
+        self.set_parameters(
+            [Parameter(name="localization_wait_timeout", value=0.0)]
+        )
         self.declare_parameter("retry_delay", 2.0)
         self.declare_parameter("handoff_retry_delay", 5.0)
         self.declare_parameter("arm_handoff_timeout", 900.0)
-        self.declare_parameter("precision_behavior_tree", PRECISION_BEHAVIOR_TREE)
+        # precision_behavior_tree is declared by the TwoStagePoint3Dock base
+        # (same default path); do not redeclare it here.
         self.declare_parameter("continuous_behavior_tree", CONTINUOUS_BEHAVIOR_TREE)
         # Localization guard: pause navigation when localization inputs stall
         # or the map pose jumps, then resume automatically once stable.
         self.declare_parameter("localization_guard_enabled", True)
-        self.declare_parameter("localization_settle_time", 1.5)
-        # Zero means wait indefinitely while stopped, so a transient
-        # relocalization correction cannot terminate a long mission.
-        self.declare_parameter("localization_wait_timeout", 0.0)
-        self.declare_parameter("max_map_odom_drift_m", 0.08)
-        self.declare_parameter("max_map_odom_drift_deg", 3.0)
         # FAST-LIO2 on this Jetson takes ~2.7 s per frame and drops queued
         # lidar frames to keep up, so body_cloud arrives every 2-3 s (and can
         # stall much longer under load). 0.5 s caused the guard to cancel every
         # goal within 0.2 s of sending it. 3.0 s still catches a dead LIO node
         # while tolerating its normal slow cadence.
         self.declare_parameter("cloud_stale_timeout", 3.0)
-        self.declare_parameter("odom_stale_timeout", 0.5)
         self.declare_parameter("monitor_period", 0.2)
-        self._client = ActionClient(self, NavigateToPose, "/navigate_to_pose")
+        # Reuse the inherited NavigateToPose client under the old alias so the
+        # existing _navigate() code keeps working unchanged.
+        self._client = self._navigator
         self._through_client = ActionClient(
             self, NavigateThroughPoses, "/navigate_through_poses"
         )
@@ -117,8 +134,6 @@ class Outdoor2RecordedRoute(Node):
         self._straight_plan_client = ActionClient(
             self, ComputePathToPose, "/compute_path_to_pose"
         )
-        self._tf_buffer = Buffer()
-        self._tf_listener = TransformListener(self._tf_buffer, self)
         self._goal_handle = None
         self._last_feedback_time = 0.0
         self._active_point = 0
@@ -139,37 +154,20 @@ class Outdoor2RecordedRoute(Node):
         self._pipeline_result_subscription = self.create_subscription(
             String, "/grasp_pipeline/result_json", self._pipeline_result_callback, 10
         )
-        # Localization-guard inputs. The guard only acts while a navigation
-        # goal is active or while waiting to (re)send one, never during arm
-        # handoffs.
-        self._latest_odom = None
+        # Localization-guard timestamps. The /odom and /fastlio2/body_cloud
+        # subscriptions are inherited from the dock base; the overridden
+        # callbacks below only add these monotonic receipt times.
         self._last_odom_time = 0.0
-        self._odom_subscription = self.create_subscription(
-            Odometry, "/odom", self._odom_callback, 20
-        )
         self._last_cloud_time = 0.0
-        self._cloud_subscription = self.create_subscription(
-            PointCloud2, "/fastlio2/body_cloud", self._cloud_callback, 10
-        )
-        # The guard may need to hold the vehicle while no Nav2 action is
-        # running (between a cancel and the next goal). Nav2's own
-        # publish_zero_velocity covers action completion; this explicit zero
-        # covers the hold window.
-        self._cmd_pub = self.create_publisher(Twist, "/cmd_vel_nav", 10)
         self.get_logger().info("Outdoor_02 two-cycle navigation/arm bridge is ready")
 
     def _odom_callback(self, message):
-        position = message.pose.pose.position
-        quaternion = message.pose.pose.orientation
-        yaw = math.atan2(
-            2.0 * (quaternion.w * quaternion.z + quaternion.x * quaternion.y),
-            1.0 - 2.0 * (quaternion.y * quaternion.y + quaternion.z * quaternion.z),
-        )
-        self._latest_odom = (position.x, position.y, yaw, time.monotonic())
-        self._last_odom_time = self._latest_odom[3]
+        self._last_odom_time = time.monotonic()
+        super()._odom_callback(message)
 
-    def _cloud_callback(self, _message):
+    def _front_cloud_callback(self, cloud):
         self._last_cloud_time = time.monotonic()
+        super()._front_cloud_callback(cloud)
 
     def _pipeline_result_callback(self, message):
         try:
@@ -291,7 +289,10 @@ class Outdoor2RecordedRoute(Node):
             "observation_speed": 25,
             "base_target_alignment_enabled": True,
             "base_aligned_place_enabled": False,
-            "base_target_center_tolerance_norm": 0.08,
+            # Stop with the verified box label within ±12% of image center;
+            # identity remains strict and does not accept color-only regions.
+            "base_target_center_tolerance_norm": 0.12,
+            "label_marker_detection_enabled": False,
             "continuous_search_enabled": True,
             "continuous_search_stop_on_center": True,
         }
@@ -366,69 +367,69 @@ class Outdoor2RecordedRoute(Node):
         return False
 
     def _dock_until_success(self, staging, goal, label):
-        """Reuse the proven two-stage slow-parking node for a final approach.
+        """Run one staging + crawl cycle in-process (like indoor_03).
 
-        The helper first uses normal Nav2 navigation to reach ``staging``.  It
-        then switches to its odometry-locked low-speed forward crawl for the
-        short verified segment to ``goal``.  That crawl does not use the local
-        costmap (which is intentionally the reason this helper exists), while
-        its narrow forward PointCloud emergency-stop corridor remains active.
-        A transient localization or point-cloud interruption retries the whole
-        stage and never terminates the mission by itself.
+        The staging navigation and the odometry-locked crawl run in this same
+        node, reusing the warm TF buffer, NavigateToPose client and
+        /cmd_vel_nav publisher. No subprocess is spawned, so there is no cold
+        start and no "no valid transform" stall: once localization is ready,
+        the staging goal is dispatched immediately. The crawl ignores the
+        local costmap by design; its narrow forward PointCloud emergency-stop
+        corridor remains active. Transient localization interruptions retry
+        the whole stage and never terminate the mission.
         """
-        point_number, sx, sy, syaw, staging_name = staging
+        _point_number, sx, sy, syaw, staging_name = staging
         _goal_number, gx, gy, gyaw, goal_name = goal
-        helper = SOURCE_ROOT / "scripts/dock_to_recorded_point3.py"
         attempt = 1
         while rclpy.ok():
-            command = [
-                sys.executable,
-                str(helper),
-                "--ros-args",
-                "-p", f"staging_x:={sx}",
-                "-p", f"staging_y:={sy}",
-                "-p", f"staging_yaw:={syaw}",
-                "-p", f"goal_x:={gx}",
-                "-p", f"goal_y:={gy}",
-                "-p", f"goal_yaw:={gyaw}",
-                "-p", "position_tolerance:=0.10",
-                "-p", "yaw_tolerance:=0.12",
-                "-p", "crawl_speed:=0.15",
-                "-p", "crawl_timeout:=45.0",
-                "-p", "max_yaw_rate:=0.16",
-                "-p", "alignment_tolerance:=0.04",
-                "-p", "localization_wait_timeout:=0.0",
-                "-p", "front_safety_enabled:=true",
-                "-p", "front_stop_distance:=0.45",
-                "-p", "front_half_width:=0.16",
-                "-p", "front_min_points:=4",
-                "-p", f"precision_behavior_tree:={self.get_parameter('precision_behavior_tree').value}",
-            ]
-            self.get_logger().info(
-                f"{label}：复用慢速停车程序，第 {attempt} 次从点{point_number}（{staging_name}）"
-                f"低速靠近（{goal_name}）"
+            # Do not dispatch a staging goal until the TF chain is available.
+            if self._wait_for_pose(timeout=5.0) is None:
+                self.get_logger().warning(
+                    f"{label}：等待定位（map→base_link TF）就绪；就绪后立即执行"
+                )
+                self._wait_before_retry()
+                continue
+            values = {
+                "staging_x": sx,
+                "staging_y": sy,
+                "staging_yaw": syaw,
+                "goal_x": gx,
+                "goal_y": gy,
+                "goal_yaw": gyaw,
+                "position_tolerance": 0.10,
+                "yaw_tolerance": 0.12,
+                "crawl_speed": 0.15,
+                "crawl_timeout": 45.0,
+                "max_yaw_rate": 0.16,
+                "alignment_tolerance": 0.04,
+                "localization_wait_timeout": 0.0,
+                "front_safety_enabled": True,
+                "front_stop_distance": 0.45,
+                "front_half_width": 0.16,
+                "front_min_points": 4,
+            }
+            results = self.set_parameters(
+                [Parameter(name=name, value=value) for name, value in values.items()]
             )
-            try:
-                process = subprocess.Popen(command)
-            except OSError as error:
-                self.get_logger().error(f"{label} 无法启动慢速停车程序: {error}")
+            if not all(result.successful for result in results):
+                self.get_logger().error(f"{label}：dock 参数设置失败；重试")
                 self._wait_before_retry()
                 attempt += 1
                 continue
-
-            while rclpy.ok() and process.poll() is None:
-                rclpy.spin_once(self, timeout_sec=0.1)
-            if not rclpy.ok():
-                if process.poll() is None:
-                    process.terminate()
-                    process.wait(timeout=2.0)
-                return False
-            if process.returncode == 0:
-                self.get_logger().info(f"{label} 完成")
-                return True
-            self.get_logger().warning(
-                f"{label} 本次未完成（状态 {process.returncode}）；等待后自动重试，不退出路线"
+            self.get_logger().info(
+                f"{label}：同进程 dock，第 {attempt} 次从（{staging_name}）"
+                f"低速靠近（{goal_name}）"
             )
+            try:
+                if not self._navigate_to_staging():
+                    raise RuntimeError("staging navigation failed")
+                if self._crawl_to_goal():
+                    self.get_logger().info(f"{label} 完成")
+                    return True
+                raise RuntimeError("crawl failed")
+            except Exception as error:
+                self._stop()
+                self.get_logger().warning(f"{label} 未完成（{error}）；等待后重试")
             self._wait_before_retry()
             attempt += 1
         return False
@@ -1094,6 +1095,19 @@ class Outdoor2RecordedRoute(Node):
             self.get_logger().warning(
                 "Arm handoff disabled by ARM_HANDOFF_ENABLED=0; running navigation only"
             )
+
+        # Wait for localization (map->base_link TF) BEFORE the red-flag gate.
+        # The wave-detection camera typically takes several seconds, during
+        # which localizer converges; once the flag passes, TF is already warm
+        # and navigation is dispatched immediately (indoor_03 style).
+        while rclpy.ok() and self._wait_for_pose(timeout=5.0) is None:
+            self.get_logger().warning(
+                "等待定位（map→base_link TF）就绪；红旗识别期间定位会继续收敛，"
+                "触发后立即可走"
+            )
+            self._wait_before_retry()
+        if not rclpy.ok():
+            return 130
 
         if os.environ.get("RED_FLAG_START_ENABLED", "1") == "1":
             if not self._wait_external_until_success(

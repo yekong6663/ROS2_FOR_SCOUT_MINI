@@ -21,7 +21,9 @@
       "Bash(code --version)",
       "Read(//home/ros/.vscode-server/bin/**)",
       "Bash(export https_proxy=http://127.0.0.1:7897 http_proxy=http://127.0.0.1:7897)",
-      "Bash(/home/ros/.vscode-server/extensions/openai.chatgpt-26.5715.31925-linux-x64/bin/linux-x86_64/codex --help)"
+      "Bash(/home/ros/.vscode-server/extensions/openai.chatgpt-26.5715.31925-linux-x64/bin/linux-x86_64/codex --help)",
+      "Bash(ls -la /home/nvidia/auto/)",
+      "Read(//home/nvidia/auto/**)"
     ]
   }
 }
