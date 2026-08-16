@@ -246,3 +246,63 @@ MPPI 会在距最终目标 `5 m` 内更积极地缩短目标距离，并跟随�
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
 ```
+
+## 启动命令与环境变量
+
+### 前置条件（每次运行前检查）
+
+1. 遥控器 **SWB 拨到最上方（Command/CAN 模式）**，否则底盘忽略 `/cmd_vel`，车不会动。
+2. 导航栈已启动且定位收敛：导航终端出现 `Relocalization is valid`；
+   可用 `ros2 run tf2_ros tf2_echo map base_link` 确认有持续输出。
+3. 无残留脚本实例：`ps aux | grep -E "run_outdoor2|dock_to_recorded"` 应为空（有则
+   `pkill -f run_outdoor2`）。
+4. 尽量减负载（关 RViz / 浏览器），lio 快定位才稳。
+
+### 1. 启动导航栈（独立终端）
+
+```bash
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+ros2 launch scout_navigation_bringup navigation_system.launch.py \
+  map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02 can_port:=can2
+```
+
+### 2. 启动路线脚本（另一个终端，环境变量控制模式）
+
+```bash
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+<环境变量> ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+```
+
+### 环境变量说明
+
+| 变量 | `0` | `1`（默认） |
+| --- | --- | --- |
+| `SKIP_OUTBOUND` | 走完整去程（点0→1→7→8） | 跳过出程，从当前位置直接进工作循环 |
+| `RED_FLAG_START_ENABLED` | 跳过红旗门，直接开跑 | 等红旗挥动信号（需机械臂侧红旗节点） |
+| `ARM_HANDOFF_ENABLED` | 跳过机械臂交接（纯导航） | 抓取/放置交接给机械臂（需 grasp 栈） |
+
+### 常用组合
+
+```bash
+# 纯导航完整流程（去程 + 两轮工作循环，不等红旗、不交接机械臂）
+SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
+ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+
+# 调试：跳过出程 + 红旗 + 机械臂（SKIP_OUTBOUND 之外均默认开启）
+SKIP_OUTBOUND=1 ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+
+# 完整任务（默认：去程 + 等红旗 + 机械臂交接）
+ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+```
+
+### 机械臂栈（仅 ARM_HANDOFF_ENABLED=1 时需要）
+
+```bash
+cd ~/auto/Robot_arm/source
+./scripts/run_piper_driver.sh                 # 终端 A：Piper 驱动
+./scripts/run_piper_moveit_ik.sh              # 终端 B：MoveIt IK
+source ./scripts/ros_env_graspnet.sh && \
+  ./scripts/run_distributed_stack_graspnet.sh --robot-backend ros2   # 终端 C：分布式 grasp 栈
+```
+
+验证：`ros2 service call /grasp_pipeline/probe std_srvs/srv/Trigger "{}"` 返回 `success: true`。

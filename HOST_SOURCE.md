@@ -165,8 +165,12 @@ sudo ip link set can2 up type can bitrate 500000
 ```bash
 source /home/nvidia/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 
-# 无红旗和机械臂接管直接去抓取
+# 无红旗和机械臂接管也不会去抓取
 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
+ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+
+# 无红旗和机械臂接管直接去抓取
+SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
 ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
 
 # 有红旗和机械臂接管直接去抓取

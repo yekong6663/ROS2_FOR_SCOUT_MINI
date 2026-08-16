@@ -1136,7 +1136,6 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             outbound_label = "前置点、目标点1至回原点2（跳过小路和大柱子）"
             if not self._navigate_sequence_until_success(OUTBOUND_POINTS, outbound_label):
                 return 130
-            return 130
 
         for round_index in range(1, 3):
             self._target_item_id = ""
@@ -1203,6 +1202,11 @@ def main():
     try:
         result = node.run()
     except (KeyboardInterrupt, ExternalShutdownException):
+        # Log explicitly so a manual Ctrl+C vs an external signal is visible
+        # in the session log (a bare exit code 130 cannot tell who sent it).
+        node.get_logger().warning(
+            "interrupt received (SIGINT/KeyboardInterrupt); stopping route"
+        )
         node.cancel()
         result = 130
     except Exception as error:

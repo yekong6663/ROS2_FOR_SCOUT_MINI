@@ -142,13 +142,13 @@ controller_server:
       # segments and keep the steering sign stable.
       wz_std: 0.18
       # Stable outdoor cruise limit. Keep this matched with the smoother so
-      # the controller can genuinely sustain 0.6 m/s on a straight segment.
-      vx_max: 0.60
+      # the controller can genuinely sustain 0.8 m/s on a straight segment.
+      vx_max: 0.80
       vx_min: 0.0
       vy_max: 0.0
-      # 0.50 lets a U-turn complete in about 6 s; matched by the smoother and
-      # behavior server limits. Tight avoidance is still braking-first.
-      wz_max: 0.50
+      # 0.60 keeps U-turns fluent at the higher cruise speed; matched by the
+      # smoother limit. Tight avoidance is still braking-first.
+      wz_max: 0.60
       temperature: 0.30
       gamma: 0.02
       prune_distance: 2.0
@@ -525,12 +525,12 @@ velocity_smoother:
     feedback: OPEN_LOOP
     # Outdoor cruise ceiling. The bounded yaw settings below retain the
     # current straight, smooth driving behaviour.
-    max_velocity: [0.60, 0.0, 0.50]
+    max_velocity: [0.80, 0.0, 0.60]
     min_velocity: [-0.15, 0.0, -0.40]
     # Resume promptly after a dynamic obstacle has cleared, while keeping
     # braking stronger than acceleration at the outdoor cruise speed.
-    max_accel: [0.75, 0.0, 0.40]
-    max_decel: [-1.50, 0.0, -0.70]
+    max_accel: [0.90, 0.0, 0.40]
+    max_decel: [-1.70, 0.0, -0.70]
     odom_topic: /odom
     odom_duration: 0.2
     deadband_velocity: [0.0, 0.0, 0.0]
