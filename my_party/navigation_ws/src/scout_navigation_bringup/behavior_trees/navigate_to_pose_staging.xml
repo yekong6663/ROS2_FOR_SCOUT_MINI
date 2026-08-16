@@ -1,0 +1,55 @@
+<!--
+  Outdoor staging navigation for dock pre-approach poses.
+
+  The staging position must be accurate (the odometry-locked crawl starts
+  from it) and the heading should be roughly respected, but a full precision
+  yaw (0.12 rad) stalls forever on lidar-localization noise. This tree uses
+  staging_goal_checker (xy 0.10 m, yaw 0.30 rad): position precise, heading
+  considered but loose enough to finish; the crawl then aligns the final
+  yaw with wheel odometry.
+-->
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="4" name="NavigateOutdoorStaging">
+      <PipelineSequence name="NavigateWithStablePath">
+        <RateController hz="0.5" name="ReplanAtHalfHz">
+          <RecoveryNode number_of_retries="1" name="ComputePathToPose">
+            <ComputePathToPose
+              goal="{goal}"
+              path="{path}"
+              planner_id="GridBased"/>
+            <ClearEntireCostmap
+              name="ClearGlobalCostmapAfterPlanningFailure"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+        <FollowPath
+          path="{path}"
+          controller_id="FollowPath"
+          goal_checker_id="staging_goal_checker"/>
+      </PipelineSequence>
+      <ReactiveFallback name="SafeRecoveryFallback">
+        <GoalUpdated/>
+        <RoundRobin name="SafeRecoveryActions">
+          <Wait name="WaitForTemporaryObstacle" wait_duration="1"/>
+          <Sequence name="RefreshCostmaps">
+            <ClearEntireCostmap
+              name="ClearLocalCostmap"
+              service_name="local_costmap/clear_entirely_local_costmap"/>
+            <ClearEntireCostmap
+              name="ClearGlobalCostmap"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+          </Sequence>
+          <Sequence name="RetreatOnlyNearGoal">
+            <ScoutNearGoal goal="{goal}" distance="2.5"/>
+            <BackUp
+              name="SafeNearGoalBackUp"
+              backup_dist="0.25"
+              backup_speed="0.08"/>
+            <Wait name="WaitForCostmapAfterBackUp" wait_duration="0.5"/>
+          </Sequence>
+        </RoundRobin>
+      </ReactiveFallback>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

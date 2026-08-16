@@ -82,7 +82,7 @@ controller_server:
     failure_tolerance: 2.0
     odom_topic: /odom
     progress_checker_plugin: progress_checker
-    goal_checker_plugins: [normal_goal_checker, precision_goal_checker]
+    goal_checker_plugins: [normal_goal_checker, precision_goal_checker, staging_goal_checker]
     controller_plugins: [FollowPath]
 
     progress_checker:
@@ -95,17 +95,30 @@ controller_server:
       plugin: nav2_controller::SimpleGoalChecker
       stateful: true
       # Ordinary route markers are pass-through points, not parking poses.
-      # Very loose tolerance: accept as soon as the chassis is within 1 m so
-      # the robot never circles to "perfectly park" at a waypoint. Only the
-      # dock staging/grasp/place points use the precision checker.
+      # Position-only check: accept as soon as the chassis is within 1 m.
+      # yaw tolerance pi means any heading satisfies the check, so the robot
+      # never circles or slows to face the recorded/tangent heading at a
+      # waypoint -- the next goal is sent immediately.
       xy_goal_tolerance: 1.0
-      yaw_goal_tolerance: 1.57
+      yaw_goal_tolerance: 3.14
 
     precision_goal_checker:
       plugin: nav2_controller::SimpleGoalChecker
       stateful: true
       xy_goal_tolerance: 0.10
       yaw_goal_tolerance: 0.12
+
+    # Dock staging poses are intermediate: the position must be accurate (the
+    # odometry-locked crawl starts from it) and the heading should be roughly
+    # respected, but not as tightly as the final grasp/place point. A 0.12 rad
+    # yaw window stalls forever on lidar-localization noise; 0.30 rad (17 deg)
+    # still aligns the chassis while the crawl finishes the yaw with wheel
+    # odometry.
+    staging_goal_checker:
+      plugin: nav2_controller::SimpleGoalChecker
+      stateful: true
+      xy_goal_tolerance: 0.10
+      yaw_goal_tolerance: 0.30
 
     FollowPath:
       # MPPI evaluates complete future trajectories instead of steering toward
@@ -172,9 +185,11 @@ controller_server:
       GoalAngleCritic:
         enabled: true
         cost_power: 1
-        # Stronger final-heading pressure finishes a U-turn decisively instead
-        # of hovering just short of the recorded yaw.
-        cost_weight: 4.0
+        # Ordinary waypoints are position-only, so do not pressure MPPI to
+        # slow and rotate to the goal heading near the end (that caused
+        # hovering around a waypoint). U-turn heading is still driven by
+        # PathAngleCritic during the turn itself.
+        cost_weight: 0.5
         threshold_to_consider: 0.5
       PathAlignCritic:
         enabled: true

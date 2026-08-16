@@ -63,6 +63,16 @@ class TwoStagePoint3Dock(Node):
         self.declare_parameter("front_stop_distance", 0.45)
         self.declare_parameter("front_half_width", 0.16)
         self.declare_parameter("front_min_points", 4)
+        # Staging poses are intermediate: the position must be accurate (the
+        # odometry-locked crawl starts from it) and the heading should be
+        # roughly respected, but 0.12 rad precision stalls forever on lidar
+        # localization noise. Use the staging tree (xy 0.10 m, yaw 0.30 rad);
+        # the crawl finishes the final yaw with wheel odometry.
+        self.declare_parameter(
+            "staging_behavior_tree",
+            "/home/nvidia/auto/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/"
+            "scout_navigation_bringup/behavior_trees/navigate_to_pose_staging.xml",
+        )
         self.declare_parameter(
             "precision_behavior_tree",
             "/home/nvidia/auto/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/"
@@ -229,10 +239,10 @@ class TwoStagePoint3Dock(Node):
         goal.pose.pose.orientation.z = math.sin(yaw * 0.5)
         goal.pose.pose.orientation.w = math.cos(yaw * 0.5)
         goal.behavior_tree = str(
-            self.get_parameter("precision_behavior_tree").value
+            self.get_parameter("staging_behavior_tree").value
         )
         self.get_logger().info(
-            "Navigating precisely to staging pose before the direct final approach"
+            "Navigating to staging pose (position precise, heading moderate)"
         )
         future = self._navigator.send_goal_async(goal)
         rclpy.spin_until_future_complete(self, future, timeout_sec=25.0)

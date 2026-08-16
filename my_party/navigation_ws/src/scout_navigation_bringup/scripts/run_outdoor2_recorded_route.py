@@ -55,11 +55,11 @@ OUTBOUND_POINTS = [
 WORK_CYCLE_POINTS = [
     (9, -18.638, 3.721, 3.108, "待抓取点"),
     (10, -20.470, 3.775, 3.092, "抓取点"),
-    (11, -30.113, 3.611, 3.093, "抓取后行动一"),
-    (12, -29.566, -2.249, -1.401, "抓取后行动二"),
-    (13, -15.076, -3.375, -0.008, "抓取后行动三"),
-    (14, -19.200, 3.750, 3.102, "放置预停点"),
-    (15, -20.685, 3.813, 3.090, "放置点"),
+    (11, -30.113, 3.611, 3.093, "行动一"),
+    (12, -21.867, -3.865, -0.090, "行动二（2026-08-16 记录）"),
+    (13, -13.891, 2.446, 3.079, "行动三（2026-08-16 重录）"),
+    (14, -19.216, 3.669, 3.086, "放置预停点（2026-08-16 重录）"),
+    (15, -20.658, 3.757, 3.079, "放置点（2026-08-16 重录）"),
 ]
 
 SOURCE_ROOT = Path(
@@ -1111,8 +1111,17 @@ class Outdoor2RecordedRoute(Node):
         if not self._wait_for_server():
             return 130
 
-        outbound_label = "前置点、目标点1至回原点2（跳过小路和大柱子）"
-        if not self._navigate_sequence_until_success(OUTBOUND_POINTS, outbound_label):
+        # Temporary debug switch: SKIP_OUTBOUND=1 starts the mission directly
+        # at the first dock pre-stop from wherever the chassis currently is,
+        # skipping the outbound leg entirely.
+        if os.environ.get("SKIP_OUTBOUND", "0") == "1":
+            self.get_logger().warning(
+                "SKIP_OUTBOUND=1：跳过去程，直接进入工作循环（当前位姿开始）"
+            )
+        else:
+            outbound_label = "前置点、目标点1至回原点2（跳过小路和大柱子）"
+            if not self._navigate_sequence_until_success(OUTBOUND_POINTS, outbound_label):
+                return 130
             return 130
 
         for round_index in range(1, 3):
@@ -1150,6 +1159,15 @@ class Outdoor2RecordedRoute(Node):
                 self.get_logger().info(
                     f"Round {round_index}: placement completed; resuming outdoor navigation"
                 )
+            # After placement, leave the placement area through the same three
+            # transit waypoints used after grasping (11 -> 12 -> 13), so the
+            # chassis clears the boxes and returns toward the work area centre
+            # before the next round (or the mission end).
+            if not self._navigate_sequence_until_success(
+                [transit_1, transit_2, transit_3],
+                f"第 {round_index} 轮放置后行动一至三",
+            ):
+                return 130
 
         if not rclpy.ok():
             return 130
