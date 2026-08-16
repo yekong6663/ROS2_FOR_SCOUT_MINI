@@ -17,13 +17,14 @@ from pathlib import Path
 
 import rclpy
 from action_msgs.msg import GoalStatus
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Twist
 from nav2_msgs.action import (
     ComputePathToPose,
     ComputePathThroughPoses,
     NavigateThroughPoses,
     NavigateToPose,
 )
+from nav_msgs.msg import Odometry
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
 from rclpy.executors import ExternalShutdownException
@@ -31,9 +32,14 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.time import Time
 from rcl_interfaces.srv import SetParameters
+from sensor_msgs.msg import PointCloud2
 from std_msgs.msg import String
 from std_srvs.srv import Trigger
 from tf2_ros import Buffer, TransformException, TransformListener
+
+
+def normalize(angle):
+    return math.atan2(math.sin(angle), math.cos(angle))
 
 
 # Approved outdoor_02 outbound leg. The small-road and pillar detour points
@@ -42,7 +48,7 @@ from tf2_ros import Buffer, TransformException, TransformListener
 OUTBOUND_POINTS = [
     (0, 17.580, -2.213, -0.097, "目标点1前置点（2026-08-15 记录）"),
     (1, 47.405, -4.040, -0.093, "目标点1（2026-08-15 重录）"),
-    (7, 30.649, -7.153, 3.135, "回原点1"),
+    (7, 36.237, -6.434, 3.132, "回原点1（2026-08-16 重录）"),
     (8, -0.544, -1.887, -3.096, "回原点2"),
 ]
 
@@ -81,6 +87,23 @@ class Outdoor2RecordedRoute(Node):
         self.declare_parameter("arm_handoff_timeout", 900.0)
         self.declare_parameter("precision_behavior_tree", PRECISION_BEHAVIOR_TREE)
         self.declare_parameter("continuous_behavior_tree", CONTINUOUS_BEHAVIOR_TREE)
+        # Localization guard: pause navigation when localization inputs stall
+        # or the map pose jumps, then resume automatically once stable.
+        self.declare_parameter("localization_guard_enabled", True)
+        self.declare_parameter("localization_settle_time", 1.5)
+        # Zero means wait indefinitely while stopped, so a transient
+        # relocalization correction cannot terminate a long mission.
+        self.declare_parameter("localization_wait_timeout", 0.0)
+        self.declare_parameter("max_map_odom_drift_m", 0.08)
+        self.declare_parameter("max_map_odom_drift_deg", 3.0)
+        # FAST-LIO2 on this Jetson takes ~2.7 s per frame and drops queued
+        # lidar frames to keep up, so body_cloud arrives every 2-3 s (and can
+        # stall much longer under load). 0.5 s caused the guard to cancel every
+        # goal within 0.2 s of sending it. 3.0 s still catches a dead LIO node
+        # while tolerating its normal slow cadence.
+        self.declare_parameter("cloud_stale_timeout", 3.0)
+        self.declare_parameter("odom_stale_timeout", 0.5)
+        self.declare_parameter("monitor_period", 0.2)
         self._client = ActionClient(self, NavigateToPose, "/navigate_to_pose")
         self._through_client = ActionClient(
             self, NavigateThroughPoses, "/navigate_through_poses"
@@ -116,7 +139,37 @@ class Outdoor2RecordedRoute(Node):
         self._pipeline_result_subscription = self.create_subscription(
             String, "/grasp_pipeline/result_json", self._pipeline_result_callback, 10
         )
+        # Localization-guard inputs. The guard only acts while a navigation
+        # goal is active or while waiting to (re)send one, never during arm
+        # handoffs.
+        self._latest_odom = None
+        self._last_odom_time = 0.0
+        self._odom_subscription = self.create_subscription(
+            Odometry, "/odom", self._odom_callback, 20
+        )
+        self._last_cloud_time = 0.0
+        self._cloud_subscription = self.create_subscription(
+            PointCloud2, "/fastlio2/body_cloud", self._cloud_callback, 10
+        )
+        # The guard may need to hold the vehicle while no Nav2 action is
+        # running (between a cancel and the next goal). Nav2's own
+        # publish_zero_velocity covers action completion; this explicit zero
+        # covers the hold window.
+        self._cmd_pub = self.create_publisher(Twist, "/cmd_vel_nav", 10)
         self.get_logger().info("Outdoor_02 two-cycle navigation/arm bridge is ready")
+
+    def _odom_callback(self, message):
+        position = message.pose.pose.position
+        quaternion = message.pose.pose.orientation
+        yaw = math.atan2(
+            2.0 * (quaternion.w * quaternion.z + quaternion.x * quaternion.y),
+            1.0 - 2.0 * (quaternion.y * quaternion.y + quaternion.z * quaternion.z),
+        )
+        self._latest_odom = (position.x, position.y, yaw, time.monotonic())
+        self._last_odom_time = self._latest_odom[3]
+
+    def _cloud_callback(self, _message):
+        self._last_cloud_time = time.monotonic()
 
     def _pipeline_result_callback(self, message):
         try:
@@ -267,10 +320,10 @@ class Outdoor2RecordedRoute(Node):
         return True
 
     def _stop(self):
-        # A zero Twist is published by the existing navigation stack whenever
-        # an action is completed/cancelled.  This bridge has no extra cmd_vel
-        # publisher, so it cannot compete with Nav2 during handoffs.
-        return None
+        # Only the localization guard calls this, while no Nav2 action is
+        # running. During handoffs the guard is idle, so this publisher can
+        # never compete with Nav2 or the arm's scan controller.
+        self._cmd_pub.publish(Twist())
 
     def _handoff_until_success(self, label, operation):
         while rclpy.ok():
@@ -463,6 +516,138 @@ class Outdoor2RecordedRoute(Node):
         return t.x, t.y, yaw
 
     @staticmethod
+    def _map_to_odom_signature(map_pose, odom_pose):
+        """Return the planar map->odom transform implied by two poses."""
+        map_x, map_y, map_yaw = map_pose
+        odom_x, odom_y, odom_yaw = odom_pose
+        yaw = normalize(map_yaw - odom_yaw)
+        c = math.cos(yaw)
+        s = math.sin(yaw)
+        return (
+            map_x - (c * odom_x - s * odom_y),
+            map_y - (s * odom_x + c * odom_y),
+            yaw,
+        )
+
+    def _odom_pose(self):
+        sample = self._latest_odom
+        if sample is None:
+            return None
+        if time.monotonic() - sample[3] > float(
+            self.get_parameter("odom_stale_timeout").value
+        ):
+            return None
+        return sample[:3]
+
+    def _localization_stale_reason(self):
+        """Return a reason when a mid-leg localization input has stalled, or
+        None while the vehicle may keep driving.
+
+        This intentionally checks interruptions only (TF chain, lidar cloud,
+        wheel odometry). ICP jump detection is unreliable while moving, so it
+        is handled separately at the stopped gates via
+        _localization_stable_while_stopped().
+        """
+        if self._map_pose() is None:
+            return "map transform unavailable"
+        now = time.monotonic()
+        if now - self._last_cloud_time > float(
+            self.get_parameter("cloud_stale_timeout").value
+        ):
+            return f"lidar cloud stale for {now - self._last_cloud_time:.1f}s"
+        if now - self._last_odom_time > float(
+            self.get_parameter("odom_stale_timeout").value
+        ):
+            return f"odometry stale for {now - self._last_odom_time:.1f}s"
+        return None
+
+    def _localization_stable_while_stopped(self):
+        """Require the map localization to settle before a goal (re)send.
+
+        Only meaningful while stopped: both the map pose and the wheel-odom
+        pose are frozen, so any drift of the implied map->odom signature is a
+        localization jump, not vehicle motion.
+        """
+        settle_s = max(
+            0.2, float(self.get_parameter("localization_settle_time").value)
+        )
+        deadline = time.monotonic() + settle_s
+        signatures = []
+        while rclpy.ok() and time.monotonic() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.05)
+            map_pose = self._map_pose()
+            odom_pose = self._odom_pose()
+            if map_pose is None or odom_pose is None:
+                continue
+            signatures.append(self._map_to_odom_signature(map_pose, odom_pose))
+        if len(signatures) < 3:
+            self.get_logger().warning(
+                "localization guard: cannot judge stability "
+                "(map or odometry feedback unavailable)"
+            )
+            return False
+        ref_x, ref_y, ref_yaw = signatures[0]
+        translation_drift = max(
+            math.hypot(x - ref_x, y - ref_y) for x, y, _yaw in signatures
+        )
+        yaw_drift_deg = max(
+            abs(math.degrees(normalize(yaw - ref_yaw)))
+            for _x, _y, yaw in signatures
+        )
+        max_translation = float(self.get_parameter("max_map_odom_drift_m").value)
+        max_yaw = float(self.get_parameter("max_map_odom_drift_deg").value)
+        if translation_drift > max_translation or yaw_drift_deg > max_yaw:
+            self.get_logger().warning(
+                "localization guard: map localization is still jumping "
+                f"(map-odom drift={translation_drift:.3f}m/"
+                f"{yaw_drift_deg:.2f}deg, limits={max_translation:.3f}m/"
+                f"{max_yaw:.2f}deg)"
+            )
+            return False
+        return True
+
+    def _wait_until_localization_stable(self):
+        """Hold the vehicle stopped until localization is fresh and stable.
+
+        Returns True when navigation may (re)send a goal, False when the
+        configured wait timeout expires or the node shuts down.
+        """
+        if not bool(self.get_parameter("localization_guard_enabled").value):
+            return True
+        wait_timeout = float(self.get_parameter("localization_wait_timeout").value)
+        deadline = (
+            time.monotonic() + wait_timeout if wait_timeout > 0.0 else None
+        )
+        hold_started = time.monotonic()
+        next_log = 0.0
+        while rclpy.ok():
+            self._stop()
+            reason = self._localization_stale_reason()
+            if reason is None and self._localization_stable_while_stopped():
+                self.get_logger().info(
+                    "localization guard: localization stable again; "
+                    "navigation may resume"
+                )
+                return True
+            if deadline is not None and time.monotonic() >= deadline:
+                self.get_logger().error(
+                    "localization guard: did not stabilize within "
+                    f"{wait_timeout:.0f}s; vehicle remains stopped"
+                )
+                return False
+            now = time.monotonic()
+            if now >= next_log:
+                detail = f" ({reason})" if reason else " (position jumping)"
+                self.get_logger().warning(
+                    "localization guard: holding at the current pose until "
+                    f"localization is stable{detail}; held for "
+                    f"{now - hold_started:.1f}s"
+                )
+                next_log = now + 5.0
+            rclpy.spin_once(self, timeout_sec=0.3)
+        return False
+
+    @staticmethod
     def _path_is_straight_ahead(path, start_x, start_y, start_yaw):
         if len(path) < 2:
             return False
@@ -536,7 +721,61 @@ class Outdoor2RecordedRoute(Node):
         while rclpy.ok() and time.monotonic() < deadline:
             rclpy.spin_once(self, timeout_sec=0.1)
 
-    def _navigate(self, point_number, x, y, yaw, description):
+    def _wait_goal_with_guard(self, result_future, label):
+        """Block until an action result, canceling and holding the vehicle
+        when the localization guard trips.
+
+        Returns:
+          - GoalStatus on normal completion (caller compares to SUCCEEDED)
+          - None when the action ended without a result
+          - False when the guard canceled the goal (outer retry holds until
+            localization is stable again)
+        """
+        guard_enabled = bool(
+            self.get_parameter("localization_guard_enabled").value
+        )
+        monitor_period = max(
+            0.1, float(self.get_parameter("monitor_period").value)
+        )
+        last_check = time.monotonic()
+        cancelled_for_localization = False
+        while rclpy.ok() and not result_future.done():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            if not guard_enabled:
+                continue
+            now = time.monotonic()
+            if now - last_check < monitor_period:
+                continue
+            last_check = now
+            reason = self._localization_stale_reason()
+            if reason is None:
+                continue
+            self.get_logger().warning(
+                f"localization guard: cancelling goal ({label}) because {reason}"
+            )
+            self.cancel()
+            self._stop()
+            cancelled_for_localization = True
+            break
+        if cancelled_for_localization:
+            # Drain the action result (ABORTED after cancel) so no goal handle
+            # lingers; the outer retry loop will hold until stable.
+            drain_deadline = time.monotonic() + 5.0
+            while (
+                rclpy.ok()
+                and not result_future.done()
+                and time.monotonic() < drain_deadline
+            ):
+                rclpy.spin_once(self, timeout_sec=0.1)
+            self._goal_handle = None
+            return False
+        result = result_future.result()
+        self._goal_handle = None
+        if result is None:
+            return None
+        return result.status
+
+    def _navigate(self, point_number, x, y, yaw, description, waypoint=False):
         self._active_point = point_number
         self._last_feedback_time = 0.0
         goal = NavigateToPose.Goal()
@@ -546,15 +785,20 @@ class Outdoor2RecordedRoute(Node):
         goal.pose.pose.position.y = y
         goal.pose.pose.orientation.z = math.sin(yaw * 0.5)
         goal.pose.pose.orientation.w = math.cos(yaw * 0.5)
-        precision = point_number in PRECISION_POINT_NUMBERS
-        if precision:
-            goal.behavior_tree = str(
-                self.get_parameter("precision_behavior_tree").value
-            )
+        # Waypoints use the ordinary outdoor tree (relaxed goal checker), so
+        # the next goal is sent almost immediately after the previous one is
+        # reached, keeping pass-through legs continuous. Precise parking points
+        # keep their precision tree and recorded yaw.
+        if not waypoint:
+            precision = point_number in PRECISION_POINT_NUMBERS
+            if precision:
+                goal.behavior_tree = str(
+                    self.get_parameter("precision_behavior_tree").value
+                )
 
         self.get_logger().info(
             f"前往 outdoor_02 目标点 {point_number}（{description}，"
-            f"{'高精度' if precision else '普通精度'}）: "
+            f"{'过路点' if waypoint else ('高精度' if precision else '普通精度')}）: "
             f"x={x:.3f}, y={y:.3f}, yaw={yaw:.3f}"
         )
         send_future = self._client.send_goal_async(
@@ -567,20 +811,21 @@ class Outdoor2RecordedRoute(Node):
 
         self._goal_handle = send_future.result()
         result_future = self._goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
-        if result_future.result() is None:
+        outcome = self._wait_goal_with_guard(
+            result_future, f"目标点 {point_number}"
+        )
+        if outcome is False:
+            return False
+        if outcome is None:
             self.get_logger().error(f"目标点 {point_number} ended without a result")
             return False
-
-        status = result_future.result().status
-        if status != GoalStatus.STATUS_SUCCEEDED:
+        if outcome != GoalStatus.STATUS_SUCCEEDED:
             self.get_logger().error(
-                f"目标点 {point_number} failed with action status {status}; preparing retry"
+                f"目标点 {point_number} failed with action status {outcome}; preparing retry"
             )
             return False
 
         self.get_logger().info(f"已到达 outdoor_02 目标点 {point_number}")
-        self._goal_handle = None
         return True
 
     def _make_pose(self, x, y, yaw):
@@ -639,7 +884,45 @@ class Outdoor2RecordedRoute(Node):
 
         self._goal_handle = send_future.result()
         result_future = self._goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
+        guard_enabled = bool(
+            self.get_parameter("localization_guard_enabled").value
+        )
+        monitor_period = max(
+            0.1, float(self.get_parameter("monitor_period").value)
+        )
+        last_check = time.monotonic()
+        cancelled_for_localization = False
+        while rclpy.ok() and not result_future.done():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            if not guard_enabled:
+                continue
+            now = time.monotonic()
+            if now - last_check < monitor_period:
+                continue
+            last_check = now
+            reason = self._localization_stale_reason()
+            if reason is None:
+                continue
+            self.get_logger().warning(
+                "localization guard: cancelling goal on leg "
+                f"{self._active_point} because {reason}"
+            )
+            self.cancel()
+            self._stop()
+            cancelled_for_localization = True
+            break
+        if cancelled_for_localization:
+            # Drain the action result (ABORTED after cancel) so no goal handle
+            # lingers; the outer retry loop will hold until stable.
+            drain_deadline = time.monotonic() + 5.0
+            while (
+                rclpy.ok()
+                and not result_future.done()
+                and time.monotonic() < drain_deadline
+            ):
+                rclpy.spin_once(self, timeout_sec=0.1)
+            self._goal_handle = None
+            return False
         if result_future.result() is None:
             self.get_logger().error(f"连续路线 {self._active_point} 没有返回结果")
             return False
@@ -671,9 +954,101 @@ class Outdoor2RecordedRoute(Node):
             self._wait_before_retry()
         return False
 
+    def _validate_point_until_safe(self, x, y, yaw, description):
+        """Require a valid no-motion plan to a single goal before sending it."""
+        attempt = 1
+        while rclpy.ok():
+            goal = ComputePathToPose.Goal()
+            goal.goal = self._make_pose(x, y, yaw)
+            goal.use_start = False
+            goal.planner_id = "GridBased"
+            self.get_logger().info(
+                f"安全预检 {description}：仅计算路线（第 {attempt} 次），未向底盘发送运动命令"
+            )
+            future = self._straight_plan_client.send_goal_async(goal)
+            rclpy.spin_until_future_complete(self, future)
+            if future.result() is not None and future.result().accepted:
+                result_future = future.result().get_result_async()
+                rclpy.spin_until_future_complete(self, result_future)
+                result = result_future.result()
+                if (
+                    result is not None
+                    and result.status == GoalStatus.STATUS_SUCCEEDED
+                    and len(result.result.path.poses) >= 2
+                ):
+                    self.get_logger().info(
+                        f"安全预检 {description} 通过：已获得 {len(result.result.path.poses)} 个路径点"
+                    )
+                    return True
+            self.get_logger().warning(
+                f"安全预检 {description} 未通过（当前位置可能仍在致命代价区）；"
+                "保持停车并等待重试"
+            )
+            attempt += 1
+            self._wait_before_retry()
+        return False
+
+    def _navigate_sequence_until_success(self, points, label):
+        """Visit ordinary waypoints one NavigateToPose goal at a time.
+
+        Unlike NavigateThroughPoses (whose RemovePassedGoals judged pass-through
+        by distance and re-issued every waypoint on retry, making the robot
+        drive back to already-passed points), this keeps explicit progress:
+        a mid-leg failure resumes from the failed point, never re-driving
+        completed points. The relaxed waypoint goal checker (0.6 m / 1.2 rad)
+        accepts each point as soon as the chassis is near it, so the next goal
+        is sent almost immediately and pass-through legs stay continuous.
+        """
+        attempt = 1
+        start_index = 0
+        while rclpy.ok():
+            # The vehicle is stopped here (after a failure/cancel or at leg
+            # start), so the jump check is valid. Never (re)send a goal while
+            # localization is stale or still jumping; hold and auto-resume.
+            if not self._wait_until_localization_stable():
+                return False
+            resumed = False
+            for index in range(start_index, len(points)):
+                point_number, x, y, yaw, description = points[index]
+                if not resumed:
+                    if not self._validate_point_until_safe(x, y, yaw, description):
+                        break
+                    resumed = True
+                try:
+                    if self._navigate(
+                        point_number, x, y, yaw, description, waypoint=True
+                    ):
+                        start_index = index + 1
+                        continue
+                except (KeyboardInterrupt, ExternalShutdownException):
+                    raise
+                except Exception as error:
+                    self.get_logger().error(
+                        f"目标点 {point_number} 本次导航异常: {error}"
+                    )
+                self._goal_handle = None
+                self.get_logger().warning(
+                    f"逐点路线 {label} 第 {attempt} 次在目标点 {point_number} 失败；"
+                    f"从该点继续重试，已通过的 {start_index} 个点不会重走"
+                )
+                attempt += 1
+                self._wait_before_retry()
+                break
+            else:
+                self.get_logger().info(f"逐点路线 {label} 全部目标点通过")
+                return True
+        return False
+
     def _navigate_through_until_success(self, points, label):
         attempt = 1
         while rclpy.ok():
+            # The vehicle is stopped here (after a failure/cancel or at leg
+            # start), so the jump check is valid. Never (re)send a goal while
+            # localization is stale or still jumping; hold and auto-resume.
+            if not self._wait_until_localization_stable():
+                return False
+            if not self._validate_plan_until_safe(points, label):
+                return False
             try:
                 if self._navigate_through(points, label):
                     return True
@@ -726,9 +1101,7 @@ class Outdoor2RecordedRoute(Node):
             return 130
 
         outbound_label = "前置点、目标点1至回原点2（跳过小路和大柱子）"
-        if not self._validate_plan_until_safe(OUTBOUND_POINTS, outbound_label):
-            return 130
-        if not self._navigate_through_until_success(OUTBOUND_POINTS, outbound_label):
+        if not self._navigate_sequence_until_success(OUTBOUND_POINTS, outbound_label):
             return 130
 
         for round_index in range(1, 3):
@@ -748,7 +1121,7 @@ class Outdoor2RecordedRoute(Node):
                 self.get_logger().info(
                     f"Round {round_index}: grasp completed; resuming outdoor navigation"
                 )
-            if not self._navigate_through_until_success(
+            if not self._navigate_sequence_until_success(
                 [transit_1, transit_2, transit_3],
                 f"第 {round_index} 轮抓取后行动一至三",
             ):

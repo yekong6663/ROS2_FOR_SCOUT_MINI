@@ -67,9 +67,10 @@ bt_navigator:
 controller_server:
   ros__parameters:
     use_sim_time: false
-    # Faster control updates prevent one large left/right correction building
-    # up while cruising at 0.7 m/s.
-    controller_frequency: 15.0
+    # 10 Hz leaves a full 100 ms budget per cycle on the Jetson, so FAST-LIO2
+    # and the localizer keep their CPU share and map->base_link TF stays fresh.
+    # A stable 10 Hz is smoother than a starved nominal 15 Hz.
+    controller_frequency: 10.0
     # Always send a final zero Twist when navigation completes or is canceled.
     # The Piper workflow must wait for navigation success and a stationary base
     # before enabling arm motion.
@@ -114,28 +115,25 @@ controller_server:
       # Stable 10 Hz commands are more important than a longer horizon here.
       time_steps: 40
       model_dt: 0.10
-      batch_size: 900
+      # Reduced from 900 with the controller back at 10 Hz: about 24万 cost
+      # queries per second instead of 54万, keeping cycle time within budget.
+      batch_size: 600
       iteration_count: 1
-      # Keep enough low-speed samples for early dynamic-obstacle deceleration.
       # Keep enough forward candidates near the configured cruise ceiling.
       vx_std: 0.26
       vy_std: 0.0
-      # Include enough turning candidates to route around an obstacle instead
-      # of repeatedly sampling almost-straight stop/go trajectories.
-      # Do not let nearby equivalent left/right samples flip the steering
-      # sign every control cycle on an open straight segment.
-      wz_std: 0.08
-      # Outdoor straight-line speed ceiling. Curves, goals and obstacle costs
+      # Widened again so a U-turn can actually select the higher turning
+      # samples; PathAlign/PathFollow critics still dominate on straight
+      # segments and keep the steering sign stable.
+      wz_std: 0.18
       # Stable outdoor cruise limit. Keep this matched with the smoother so
       # the controller can genuinely sustain 0.6 m/s on a straight segment.
       vx_max: 0.60
       vx_min: 0.0
       vy_max: 0.0
-      # Limit abrupt steering. The velocity smoother scales linear speed down
-      # whenever angular acceleration is the limiting component.
-      # At 0.7 m/s this yields a continuous wide arc. Tight avoidance is
-      # handled by braking first instead of a high-speed steering flick.
-      wz_max: 0.40
+      # 0.50 lets a U-turn complete in about 6 s; matched by the smoother and
+      # behavior server limits. Tight avoidance is still braking-first.
+      wz_max: 0.50
       temperature: 0.30
       gamma: 0.02
       prune_distance: 2.0
@@ -172,7 +170,9 @@ controller_server:
       GoalAngleCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 3.0
+        # Stronger final-heading pressure finishes a U-turn decisively instead
+        # of hovering just short of the recorded yaw.
+        cost_weight: 4.0
         threshold_to_consider: 0.5
       PathAlignCritic:
         enabled: true
@@ -197,7 +197,10 @@ controller_server:
       PathAngleCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 0.5
+        # Strong U-turn pressure: near-zero penalty on straight segments
+        # (heading aligns with the path end), large penalty when the target
+        # is behind the vehicle, so MPPI picks turning samples decisively.
+        cost_weight: 4.0
         offset_from_furthest: 4
         threshold_to_consider: 0.5
         max_angle_to_furthest: 1.0
@@ -205,15 +208,19 @@ controller_server:
       PreferForwardCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 8.0
+        # Relaxed so turning samples that trade forward speed for yaw are not
+        # suppressed during a U-turn; straight cruising is unaffected.
+        cost_weight: 6.0
         threshold_to_consider: 0.5
 
 local_costmap:
   local_costmap:
     ros__parameters:
       use_sim_time: false
-      update_frequency: 10.0
-      publish_frequency: 5.0
+      # Matched to the 10 Hz controller; halving the update rate frees CPU for
+      # FAST-LIO2 without degrading the MPPI cost field.
+      update_frequency: 5.0
+      publish_frequency: 2.0
       global_frame: lidar
       robot_base_frame: base_link
       transform_tolerance: 0.5
@@ -242,13 +249,50 @@ local_costmap:
       # Use Nav2's standard composition order. The earlier experimental order
       # put StaticLayer last; changing its merge mode then exposed every close
       # lidar return at once and the 0.45 m inflation engulfed the robot.
-      plugins: [static_layer, inflation_layer, dynamic_obstacle_buffer]
+      plugins: [static_layer, voxel_layer, inflation_layer, dynamic_obstacle_buffer]
 
       static_layer:
         plugin: nav2_costmap_2d::StaticLayer
         enabled: true
         map_subscribe_transient_local: true
         subscribe_to_updates: true
+
+      voxel_layer:
+        plugin: nav2_costmap_2d::VoxelLayer
+        enabled: true
+        footprint_clearing_enabled: true
+        publish_voxel_map: false
+        # The MID-360S is 0.30 m above the ground, while runtime transforms
+        # place its origin as low as z=-0.63 m in this costmap frame. Keep the
+        # sensor origin inside the grid so raytracing can clear moved objects.
+        # Humble supports at most 16 vertical voxels. This grid spans
+        # -0.80 m .. 2.08 m.
+        origin_z: -0.80
+        z_resolution: 0.18
+        z_voxels: 16
+        max_obstacle_height: 2.08
+        # Mark on a single voxel so a ~0.30 m obstacle is not lost after the
+        # height filter. The input is the filtered cloud, so ground noise is
+        # already removed and cannot be marked a second time.
+        mark_threshold: 1
+        unknown_threshold: 15
+        observation_sources: filtered_cloud
+        filtered_cloud:
+          topic: /nav/filtered_obstacle_cloud
+          data_type: PointCloud2
+          marking: true
+          clearing: true
+          # The filtered cloud already clips to these heights; keep the layer
+          # bounds matching so marking and ray clearing stay consistent.
+          min_obstacle_height: -0.05
+          max_obstacle_height: 1.35
+          # Ignore close body/mount reflections and observe obstacles earlier.
+          obstacle_min_range: 0.35
+          obstacle_max_range: 5.0
+          raytrace_min_range: 0.35
+          raytrace_max_range: 6.0
+          observation_persistence: 0.0
+          expected_update_rate: 0.0
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
@@ -265,7 +309,7 @@ local_costmap:
         enabled: true
         topic: /nav/filtered_obstacle_cloud
         map_topic: /map
-        # Live people and obstacles receive an earlier safety zone at 0.7 m/s.
+        # Live people and obstacles receive an earlier safety zone at 0.6 m/s.
         inflation_radius: 0.75
         inscribed_radius: 0.50
         cost_scaling_factor: 4.0
@@ -283,10 +327,10 @@ global_costmap:
   global_costmap:
     ros__parameters:
       use_sim_time: false
-      # Clear moved obstacles quickly enough that the next global replan does
-      # not keep following a stale detour.
-      update_frequency: 5.0
-      publish_frequency: 3.0
+      # The 0.5 Hz behavior-tree replan gates path regeneration, so a 2 Hz
+      # global costmap still clears moved obstacles before the next replan.
+      update_frequency: 2.0
+      publish_frequency: 2.0
       global_frame: map
       robot_base_frame: base_link
       transform_tolerance: 0.5
@@ -305,13 +349,36 @@ global_costmap:
       # Global paths may approach saved map edges more closely; local dynamic
       # obstacle buffering still keeps a larger safety margin around live data.
       footprint_padding: 0.06
-      plugins: [static_layer, inflation_layer, dynamic_obstacle_buffer]
+      plugins: [static_layer, obstacle_layer, inflation_layer, dynamic_obstacle_buffer]
 
       static_layer:
         plugin: nav2_costmap_2d::StaticLayer
         enabled: true
         map_subscribe_transient_local: true
         subscribe_to_updates: true
+
+      obstacle_layer:
+        plugin: nav2_costmap_2d::ObstacleLayer
+        enabled: true
+        footprint_clearing_enabled: true
+        combination_method: 1
+        # Raw body cloud gives the global planner a long 10 m view so a new
+        # obstacle is avoided before the local controller reaches it. The
+        # -0.15 m lower height bound rejects ground returns.
+        observation_sources: body_cloud
+        body_cloud:
+          topic: /fastlio2/body_cloud
+          data_type: PointCloud2
+          marking: true
+          clearing: true
+          min_obstacle_height: -0.15
+          max_obstacle_height: 1.70
+          obstacle_min_range: 0.35
+          obstacle_max_range: 10.0
+          raytrace_min_range: 0.35
+          raytrace_max_range: 12.0
+          observation_persistence: 0.0
+          expected_update_rate: 0.0
 
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
@@ -412,7 +479,7 @@ behavior_server:
     robot_base_frame: base_link
     transform_tolerance: 0.5
     simulate_ahead_time: 2.0
-    max_rotational_vel: 0.40
+    max_rotational_vel: 0.50
     min_rotational_vel: 0.15
     rotational_acc_lim: 1.8
 
@@ -441,7 +508,7 @@ velocity_smoother:
     feedback: OPEN_LOOP
     # Outdoor cruise ceiling. The bounded yaw settings below retain the
     # current straight, smooth driving behaviour.
-    max_velocity: [0.60, 0.0, 0.40]
+    max_velocity: [0.60, 0.0, 0.50]
     min_velocity: [-0.15, 0.0, -0.40]
     # Resume promptly after a dynamic obstacle has cleared, while keeping
     # braking stronger than acceleration at the outdoor cruise speed.

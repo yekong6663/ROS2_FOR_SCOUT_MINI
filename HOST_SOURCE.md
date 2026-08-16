@@ -154,6 +154,23 @@ ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto
 # 室内
 ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/indoor_03 can_port:=can2
 ```
+设置 500K 波特率并启用接口：
+
+```bash
+sudo ip link set can2 down
+sudo ip link set can2 up type can bitrate 500000
+```
+
+启动脚本文件
+```bash
+source /home/nvidia/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+
+RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
+ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+```
+
+
+
 
 可替换的地图目录：
 
