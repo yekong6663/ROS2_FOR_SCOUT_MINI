@@ -95,9 +95,11 @@ controller_server:
       plugin: nav2_controller::SimpleGoalChecker
       stateful: true
       # Ordinary route markers are pass-through points, not parking poses.
-      # After yielding for an obstacle, do not circle back to re-align here.
-      xy_goal_tolerance: 0.60
-      yaw_goal_tolerance: 1.20
+      # Very loose tolerance: accept as soon as the chassis is within 1 m so
+      # the robot never circles to "perfectly park" at a waypoint. Only the
+      # dock staging/grasp/place points use the precision checker.
+      xy_goal_tolerance: 1.0
+      yaw_goal_tolerance: 1.57
 
     precision_goal_checker:
       plugin: nav2_controller::SimpleGoalChecker

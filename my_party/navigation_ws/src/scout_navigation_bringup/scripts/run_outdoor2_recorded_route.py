@@ -1010,6 +1010,17 @@ class Outdoor2RecordedRoute(Node):
             resumed = False
             for index in range(start_index, len(points)):
                 point_number, x, y, yaw, description = points[index]
+                # Pass-through points use the tangent toward their successor as
+                # the goal heading instead of the recorded parking yaw. The
+                # recorded yaw made SmacPlannerLattice draw S-shaped detours to
+                # face an arbitrary old heading and the goal checker then
+                # stalled the robot while it turned to that heading. With the
+                # tangent heading the chassis arrives already aligned, so the
+                # goal is accepted almost immediately and the next waypoint is
+                # sent without a stop. The final waypoint keeps its yaw.
+                if index + 1 < len(points):
+                    _next_number, next_x, next_y, _next_yaw, _next_description = points[index + 1]
+                    yaw = math.atan2(next_y - y, next_x - x)
                 if not resumed:
                     if not self._validate_point_until_safe(x, y, yaw, description):
                         break
