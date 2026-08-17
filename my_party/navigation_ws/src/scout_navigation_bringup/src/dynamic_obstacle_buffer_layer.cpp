@@ -10,7 +10,7 @@
 
 #include "geometry_msgs/msg/point_stamped.hpp"
 #include "nav2_costmap_2d/cost_values.hpp"
-#include "nav2_costmap_2d/layer.hpp"
+#include "nav2_costmap_2d/costmap_layer.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "pluginlib/class_list_macros.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -23,7 +23,11 @@
 namespace scout_navigation_bringup
 {
 
-class DynamicObstacleBufferLayer : public nav2_costmap_2d::Layer
+// Keep live lidar obstacles in an independent layer.  Writing directly to the
+// master costmap makes a max-composed dynamic cost survive after its source
+// point cloud has disappeared.  CostmapLayer owns a transient grid which can
+// be cleared safely without touching the static map or its inflation costs.
+class DynamicObstacleBufferLayer : public nav2_costmap_2d::CostmapLayer
 {
 public:
   void onInitialize() override
@@ -39,9 +43,11 @@ public:
     declareParameter("max_obstacle_height", rclcpp::ParameterValue(1.70));
     declareParameter("obstacle_min_range", rclcpp::ParameterValue(0.35));
     declareParameter("obstacle_max_range", rclcpp::ParameterValue(6.0));
-    declareParameter("observation_timeout", rclcpp::ParameterValue(0.30));
+    declareParameter("observation_timeout", rclcpp::ParameterValue(3.2));
+    declareParameter("keep_duration_s", rclcpp::ParameterValue(1.2));
     declareParameter("cluster_resolution", rclcpp::ParameterValue(0.20));
     declareParameter("min_points_per_cluster", rclcpp::ParameterValue(3));
+    declareParameter("ignore_robot_radius", rclcpp::ParameterValue(0.42));
 
     node->get_parameter(name_ + ".enabled", enabled_);
     node->get_parameter(name_ + ".topic", topic_);
@@ -54,11 +60,19 @@ public:
     node->get_parameter(name_ + ".obstacle_min_range", min_range_);
     node->get_parameter(name_ + ".obstacle_max_range", max_range_);
     node->get_parameter(name_ + ".observation_timeout", observation_timeout_);
+    node->get_parameter(name_ + ".keep_duration_s", keep_duration_s_);
     node->get_parameter(name_ + ".cluster_resolution", cluster_resolution_);
     node->get_parameter(name_ + ".min_points_per_cluster", min_points_per_cluster_);
+    node->get_parameter(name_ + ".ignore_robot_radius", ignore_robot_radius_);
+    if (!node->get_parameter("robot_base_frame", robot_base_frame_) ||
+      robot_base_frame_.empty())
+    {
+      robot_base_frame_ = "base_link";
+    }
     resetBounds(current_min_x_, current_min_y_, current_max_x_, current_max_y_);
     resetBounds(last_min_x_, last_min_y_, last_max_x_, last_max_y_);
     last_observation_time_ = clock_->now() - rclcpp::Duration::from_seconds(observation_timeout_ + 1.0);
+    last_nonempty_time_ = last_observation_time_;
 
     rclcpp::SubscriptionOptions options;
     options.callback_group = callback_group_;
@@ -70,6 +84,11 @@ public:
       map_topic_, rclcpp::QoS(1).reliable().transient_local(),
       std::bind(&DynamicObstacleBufferLayer::mapCallback, this, std::placeholders::_1),
       options);
+    // CostmapLayer owns a backing grid (costmap_) that must be resized to the
+    // master before updateCosts() touches it. Without this the std::fill and
+    // setCost/getCost calls operate on an unallocated grid and crash the
+    // costmap update thread (no dynamic inflation shown, vehicle stops).
+    matchSize();
     current_ = true;
   }
 
@@ -77,45 +96,71 @@ public:
     double, double, double, double * min_x, double * min_y, double * max_x, double * max_y) override
   {
     std::lock_guard<std::mutex> lock(mutex_);
+    // Always re-touch the previous footprint so Nav2 resetMap() covers the
+    // cells we are about to stop writing. Otherwise a departed person leaves
+    // max-composed inflation on the global map forever.
     includeBounds(last_min_x_, last_min_y_, last_max_x_, last_max_y_, min_x, min_y, max_x, max_y);
-    if (isFresh()) {
-      includeBounds(current_min_x_, current_min_y_, current_max_x_, current_max_y_, min_x, min_y, max_x, max_y);
-    }
+    includeBounds(current_min_x_, current_min_y_, current_max_x_, current_max_y_, min_x, min_y, max_x, max_y);
   }
 
-  void updateCosts(nav2_costmap_2d::Costmap2D & master, int, int, int, int) override
+  void updateCosts(
+    nav2_costmap_2d::Costmap2D & master, int min_i, int min_j, int max_i, int max_j) override
   {
+    if (costmap_ == nullptr ||
+      getSizeInCellsX() != master.getSizeInCellsX() ||
+      getSizeInCellsY() != master.getSizeInCellsY())
+    {
+      matchSize();
+    }
+
     std::vector<Point> points;
+    bool clear_last_after_update = false;
     {
       std::lock_guard<std::mutex> lock(mutex_);
-      if (isFresh()) {
+      if (isHoldingObstacles()) {
         points = points_;
         last_min_x_ = current_min_x_;
         last_min_y_ = current_min_y_;
         last_max_x_ = current_max_x_;
         last_max_y_ = current_max_y_;
       } else {
-        last_min_x_ = current_min_x_;
-        last_min_y_ = current_min_y_;
-        last_max_x_ = current_max_x_;
-        last_max_y_ = current_max_y_;
+        // Keep last_* through this cycle so updateBounds already expanded
+        // the dirty window. Drop it afterwards so an empty layer does not
+        // keep resetting the same global patch forever.
+        if (std::isfinite(current_min_x_)) {
+          last_min_x_ = current_min_x_;
+          last_min_y_ = current_min_y_;
+          last_max_x_ = current_max_x_;
+          last_max_y_ = current_max_y_;
+        }
+        clear_last_after_update = std::isfinite(last_min_x_);
+        resetBounds(current_min_x_, current_min_y_, current_max_x_, current_max_y_);
       }
     }
 
-    const double resolution = master.getResolution();
+    // Only this layer's backing grid. Saved walls and their inflation live
+    // in other layers and are not touched by this fill.
+    std::fill(
+      costmap_, costmap_ + getSizeInCellsX() * getSizeInCellsY(),
+      nav2_costmap_2d::FREE_SPACE);
+
+    double robot_x = 0.0;
+    double robot_y = 0.0;
+    const bool have_robot = robotPose(robot_x, robot_y);
+    const double resolution = getResolution();
     const int cell_radius = static_cast<int>(std::ceil(inflation_radius_ / resolution));
     for (const auto & point : points) {
       unsigned int center_x;
       unsigned int center_y;
-      if (!master.worldToMap(point.x, point.y, center_x, center_y)) {
+      if (!worldToMap(point.x, point.y, center_x, center_y)) {
         continue;
       }
       for (int dy = -cell_radius; dy <= cell_radius; ++dy) {
         for (int dx = -cell_radius; dx <= cell_radius; ++dx) {
           const int mx = static_cast<int>(center_x) + dx;
           const int my = static_cast<int>(center_y) + dy;
-          if (mx < 0 || my < 0 || mx >= static_cast<int>(master.getSizeInCellsX()) ||
-            my >= static_cast<int>(master.getSizeInCellsY()))
+          if (mx < 0 || my < 0 || mx >= static_cast<int>(getSizeInCellsX()) ||
+            my >= static_cast<int>(getSizeInCellsY()))
           {
             continue;
           }
@@ -123,12 +168,27 @@ public:
           if (distance > inflation_radius_) {
             continue;
           }
+          if (have_robot) {
+            double wx = 0.0;
+            double wy = 0.0;
+            mapToWorld(static_cast<unsigned int>(mx), static_cast<unsigned int>(my), wx, wy);
+            if (std::hypot(wx - robot_x, wy - robot_y) <= ignore_robot_radius_) {
+              continue;
+            }
+          }
           const auto cost = dynamicCost(distance);
-          if (cost > master.getCost(static_cast<unsigned int>(mx), static_cast<unsigned int>(my))) {
-            master.setCost(static_cast<unsigned int>(mx), static_cast<unsigned int>(my), cost);
+          if (cost > getCost(static_cast<unsigned int>(mx), static_cast<unsigned int>(my))) {
+            setCost(static_cast<unsigned int>(mx), static_cast<unsigned int>(my), cost);
           }
         }
       }
+    }
+
+    updateWithMax(master, min_i, min_j, max_i, max_j);
+
+    if (clear_last_after_update) {
+      std::lock_guard<std::mutex> lock(mutex_);
+      resetBounds(last_min_x_, last_min_y_, last_max_x_, last_max_y_);
     }
   }
 
@@ -137,6 +197,7 @@ public:
     std::lock_guard<std::mutex> lock(mutex_);
     points_.clear();
     resetBounds(current_min_x_, current_min_y_, current_max_x_, current_max_y_);
+    resetBounds(last_min_x_, last_min_y_, last_max_x_, last_max_y_);
   }
 
   bool isClearable() override {return true;}
@@ -149,6 +210,34 @@ private:
   {
     std::lock_guard<std::mutex> lock(map_mutex_);
     static_map_ = map;
+  }
+
+  bool robotPose(double & x, double & y) const
+  {
+    try {
+      const auto pose = tf_->lookupTransform(
+        layered_costmap_->getGlobalFrameID(),
+        robot_base_frame_,
+        tf2::TimePointZero);
+      x = pose.transform.translation.x;
+      y = pose.transform.translation.y;
+      return true;
+    } catch (const tf2::TransformException &) {
+      return false;
+    }
+  }
+
+  bool isNearRobot(double x, double y) const
+  {
+    if (ignore_robot_radius_ <= 0.0) {
+      return false;
+    }
+    double robot_x = 0.0;
+    double robot_y = 0.0;
+    if (!robotPose(robot_x, robot_y)) {
+      return false;
+    }
+    return std::hypot(x - robot_x, y - robot_y) <= ignore_robot_radius_;
   }
 
   bool isSavedMapObstacle(double x, double y) const
@@ -191,10 +280,17 @@ private:
     try {
       transform = tf_->lookupTransform(
         layered_costmap_->getGlobalFrameID(), cloud->header.frame_id,
-        rclcpp::Time(cloud->header.stamp), rclcpp::Duration::from_seconds(0.05));
-    } catch (const tf2::TransformException & ex) {
-      RCLCPP_WARN_THROTTLE(logger_, *clock_, 2000, "Dynamic obstacle buffer skipped cloud: %s", ex.what());
-      return;
+        rclcpp::Time(cloud->header.stamp), rclcpp::Duration::from_seconds(0.20));
+    } catch (const tf2::TransformException &) {
+      try {
+        transform = tf_->lookupTransform(
+          layered_costmap_->getGlobalFrameID(), cloud->header.frame_id,
+          tf2::TimePointZero);
+      } catch (const tf2::TransformException & ex) {
+        RCLCPP_WARN_THROTTLE(
+          logger_, *clock_, 2000, "Dynamic obstacle buffer skipped cloud: %s", ex.what());
+        return;
+      }
     }
 
     std::unordered_map<int64_t, Cluster> clusters;
@@ -223,6 +319,9 @@ private:
         input.point.z = *z;
         tf2::doTransform(input, output, transform);
         if (isSavedMapObstacle(output.point.x, output.point.y)) {
+          continue;
+        }
+        if (isNearRobot(output.point.x, output.point.y)) {
           continue;
         }
         const int gx = static_cast<int>(std::floor(output.point.x / cluster_resolution_));
@@ -254,16 +353,18 @@ private:
     }
 
     std::lock_guard<std::mutex> lock(mutex_);
+    const auto now = clock_->now();
+    last_observation_time_ = now;
     points_ = std::move(received);
     if (points_.empty()) {
       resetBounds(current_min_x_, current_min_y_, current_max_x_, current_max_y_);
     } else {
+      last_nonempty_time_ = now;
       current_min_x_ = min_x;
       current_min_y_ = min_y;
       current_max_x_ = max_x;
       current_max_y_ = max_y;
     }
-    last_observation_time_ = clock_->now();
   }
 
   unsigned char dynamicCost(double distance) const
@@ -276,9 +377,14 @@ private:
       std::max(1.0, scaled * (nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE - 1)));
   }
 
-  bool isFresh() const
+  bool isHoldingObstacles() const
   {
-    return (clock_->now() - last_observation_time_).seconds() <= observation_timeout_;
+    if (points_.empty()) {
+      return false;
+    }
+    const double since_cloud = (clock_->now() - last_observation_time_).seconds();
+    const double since_hit = (clock_->now() - last_nonempty_time_).seconds();
+    return since_cloud <= observation_timeout_ && since_hit <= keep_duration_s_;
   }
 
   static void resetBounds(double & min_x, double & min_y, double & max_x, double & max_y)
@@ -310,6 +416,7 @@ private:
   nav_msgs::msg::OccupancyGrid::SharedPtr static_map_;
   std::string topic_;
   std::string map_topic_;
+  std::string robot_base_frame_{"base_link"};
   double inflation_radius_{0.55};
   double inscribed_radius_{0.34};
   double cost_scaling_factor_{4.0};
@@ -317,10 +424,13 @@ private:
   double max_obstacle_height_{1.70};
   double min_range_{0.35};
   double max_range_{6.0};
-  double observation_timeout_{0.30};
+  double observation_timeout_{3.2};
+  double keep_duration_s_{1.2};
   double cluster_resolution_{0.20};
   int min_points_per_cluster_{3};
+  double ignore_robot_radius_{0.42};
   rclcpp::Time last_observation_time_{0, 0, RCL_ROS_TIME};
+  rclcpp::Time last_nonempty_time_{0, 0, RCL_ROS_TIME};
   double current_min_x_;
   double current_min_y_;
   double current_max_x_;

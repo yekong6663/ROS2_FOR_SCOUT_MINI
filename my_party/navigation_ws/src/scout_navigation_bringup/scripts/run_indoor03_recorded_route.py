@@ -38,6 +38,8 @@ class Indoor03Route(TwoStagePoint3Dock):
         self.declare_parameter("route_retry_delay", 2.0)
         self.declare_parameter("handoff_retry_delay", 5.0)
         self.declare_parameter("arm_handoff_timeout", 900.0)
+        # Extra attempts after the first failure. Two means three tries total.
+        self.declare_parameter("recognition_max_retries", 2)
         self._pipeline_probe = self.create_client(Trigger, "/grasp_pipeline/probe")
         self._pipeline_run = self.create_client(Trigger, "/grasp_pipeline/run")
         self._pipeline_set_parameters = self.create_client(
@@ -136,7 +138,16 @@ class Indoor03Route(TwoStagePoint3Dock):
     def _wait_for_grasp_result(self, sequence_before):
         timeout = float(self.get_parameter("arm_handoff_timeout").value)
         deadline = time.monotonic() + timeout
-        terminal = {"ok", "completed", "failed", "no_candidate", "stopped", "cancelled", "rejected"}
+        terminal = {
+            "ok",
+            "completed",
+            "failed",
+            "no_candidate",
+            "skipped_no_target_card",
+            "stopped",
+            "cancelled",
+            "rejected",
+        }
         while rclpy.ok() and time.monotonic() < deadline:
             rclpy.spin_once(self, timeout_sec=0.1)
             if self._pipeline_result_sequence <= sequence_before:
@@ -190,6 +201,13 @@ class Indoor03Route(TwoStagePoint3Dock):
         )
         payload = self._wait_for_grasp_result(sequence_before)
         status = str(payload.get("status") or "")
+        if status in {"skipped_no_target_card", "no_candidate"}:
+            self._target_item_id = ""
+            self.get_logger().warning(
+                f"Pickup skipped ({status}): "
+                f"{payload.get('summary') or payload.get('message') or status}"
+            )
+            return False
         if status not in {"ok", "completed"}:
             raise RuntimeError(
                 f"grasp failed: {payload.get('summary') or payload.get('message') or status}"
@@ -258,17 +276,30 @@ class Indoor03Route(TwoStagePoint3Dock):
             raise RuntimeError(f"calibrated placement failed: {placement.message}")
         return True
 
-    def run_handoff_until_success(self, label, operation):
-        """Retry a required handoff without spawning a new shell process."""
-        while rclpy.ok():
-            self.get_logger().info(label)
+    def run_handoff_limited(self, label, operation):
+        """Retry infrastructure failures a bounded number of times, then skip.
+
+        A clean False from the operation means recognition already exhausted
+        its retries and the mission should continue without that stage.
+        """
+        max_retries = max(0, int(self.get_parameter("recognition_max_retries").value))
+        for attempt in range(1 + max_retries):
+            if not rclpy.ok():
+                return False
+            self.get_logger().info(f"{label} (attempt {attempt + 1}/{1 + max_retries})")
             try:
-                if operation():
-                    return True
+                return bool(operation())
             except Exception as error:
                 self.get_logger().error(
-                    f"{label} failed: {error}; holding position and retrying"
+                    f"{label} failed: {error}"
+                    + (
+                        "; holding position and retrying"
+                        if attempt < max_retries
+                        else "; abandoning this stage and continuing the route"
+                    )
                 )
+            if attempt >= max_retries:
+                return False
             self._stop()
             delay = max(
                 1.0, float(self.get_parameter("handoff_retry_delay").value)
@@ -442,12 +473,17 @@ class Indoor03Route(TwoStagePoint3Dock):
             return 130
 
         self._stop()
-        if not self.run_handoff_until_success(
+        grasped = self.run_handoff_limited(
             "Pickup reached; handing control to the arm pipeline",
             self.grasp_handoff,
-        ):
-            return 130
-        self.get_logger().info("Arm handoff completed; resuming navigation immediately")
+        )
+        if grasped:
+            self.get_logger().info("Arm handoff completed; resuming navigation immediately")
+        else:
+            self.get_logger().warning(
+                "Pickup abandoned after recognition retries; "
+                "continuing the route and skipping placement"
+            )
 
         if not self.navigate("另一侧1", 13.065, -12.413, 3.092, NORMAL_BT):
             return 130
@@ -459,12 +495,22 @@ class Indoor03Route(TwoStagePoint3Dock):
             return 130
 
         self._stop()
-        if not self.run_handoff_until_success(
-            "Placement reached; handing control to the arm pipeline",
-            self.place_handoff,
-        ):
-            return 130
-        self.get_logger().info("Placement handoff completed; resuming navigation immediately")
+        if grasped:
+            if self.run_handoff_limited(
+                "Placement reached; handing control to the arm pipeline",
+                self.place_handoff,
+            ):
+                self.get_logger().info(
+                    "Placement handoff completed; resuming navigation immediately"
+                )
+            else:
+                self.get_logger().warning(
+                    "Target-box recognition/placement abandoned; continuing the route"
+                )
+        else:
+            self.get_logger().warning(
+                "Skipping placement because pickup did not acquire a catalog target"
+            )
 
         if not self.navigate("另一侧2", 13.065, -12.413, 3.092, NORMAL_BT):
             return 130

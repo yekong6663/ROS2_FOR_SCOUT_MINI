@@ -106,6 +106,7 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         self.declare_parameter("retry_delay", 2.0)
         self.declare_parameter("handoff_retry_delay", 5.0)
         self.declare_parameter("arm_handoff_timeout", 900.0)
+        self.declare_parameter("recognition_max_retries", 2)
         # precision_behavior_tree is declared by the TwoStagePoint3Dock base
         # (same default path); do not redeclare it here.
         self.declare_parameter("continuous_behavior_tree", CONTINUOUS_BEHAVIOR_TREE)
@@ -229,7 +230,16 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
 
     def _wait_for_grasp_result(self, sequence_before):
         deadline = time.monotonic() + float(self.get_parameter("arm_handoff_timeout").value)
-        terminal = {"ok", "completed", "failed", "no_candidate", "stopped", "cancelled", "rejected"}
+        terminal = {
+            "ok",
+            "completed",
+            "failed",
+            "no_candidate",
+            "skipped_no_target_card",
+            "stopped",
+            "cancelled",
+            "rejected",
+        }
         while rclpy.ok() and time.monotonic() < deadline:
             rclpy.spin_once(self, timeout_sec=0.1)
             if self._pipeline_result_sequence <= sequence_before:
@@ -271,8 +281,16 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         if not response.success:
             raise RuntimeError(f"grasp run was rejected: {response.message}")
         payload = self._wait_for_grasp_result(sequence_before)
-        if str(payload.get("status") or "") not in {"ok", "completed"}:
-            raise RuntimeError(f"grasp failed: {payload.get('summary') or payload.get('message') or payload.get('status')}")
+        status = str(payload.get("status") or "")
+        if status in {"skipped_no_target_card", "no_candidate"}:
+            self._target_item_id = ""
+            self.get_logger().warning(
+                f"Pickup skipped ({status}): "
+                f"{payload.get('summary') or payload.get('message') or status}"
+            )
+            return False
+        if status not in {"ok", "completed"}:
+            raise RuntimeError(f"grasp failed: {payload.get('summary') or payload.get('message') or status}")
         target_item_id = str(dict(payload.get("target_item") or {}).get("item_id") or "").strip()
         if target_item_id not in {"red_block", "yellow_block", "blue_block", "orange_bottle", "dark_bottle", "green_bottle"}:
             raise RuntimeError("grasp completed without a valid catalog target")
@@ -326,14 +344,25 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         # never compete with Nav2 or the arm's scan controller.
         self._cmd_pub.publish(Twist())
 
-    def _handoff_until_success(self, label, operation):
-        while rclpy.ok():
-            self.get_logger().info(label)
+    def _handoff_limited(self, label, operation):
+        max_retries = max(0, int(self.get_parameter("recognition_max_retries").value))
+        for attempt in range(1 + max_retries):
+            if not rclpy.ok():
+                return False
+            self.get_logger().info(f"{label} (attempt {attempt + 1}/{1 + max_retries})")
             try:
-                if operation():
-                    return True
+                return bool(operation())
             except Exception as error:
-                self.get_logger().error(f"{label} failed: {error}; holding position and retrying")
+                self.get_logger().error(
+                    f"{label} failed: {error}"
+                    + (
+                        "; holding position and retrying"
+                        if attempt < max_retries
+                        else "; abandoning this stage and continuing the route"
+                    )
+                )
+            if attempt >= max_retries:
+                return False
             deadline = time.monotonic() + max(1.0, float(self.get_parameter("handoff_retry_delay").value))
             while rclpy.ok() and time.monotonic() < deadline:
                 rclpy.spin_once(self, timeout_sec=0.1)
@@ -1145,15 +1174,21 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
                 pickup_staging, pickup, f"第 {round_index} 轮待抓取点到抓取点"
             ):
                 return 130
+            grasped = False
             if arm_handoff_enabled:
-                if not self._handoff_until_success(
+                grasped = self._handoff_limited(
                     f"Round {round_index}: pickup reached; handing control to the arm pipeline",
                     self.grasp_handoff,
-                ):
-                    return 130
-                self.get_logger().info(
-                    f"Round {round_index}: grasp completed; resuming outdoor navigation"
                 )
+                if grasped:
+                    self.get_logger().info(
+                        f"Round {round_index}: grasp completed; resuming outdoor navigation"
+                    )
+                else:
+                    self.get_logger().warning(
+                        f"Round {round_index}: pickup abandoned; continuing the route "
+                        "and skipping placement"
+                    )
             if not self._navigate_sequence_until_success(
                 [transit_1, transit_2, transit_3],
                 f"第 {round_index} 轮抓取后行动一至三",
@@ -1163,14 +1198,21 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
                 place_staging, place, f"第 {round_index} 轮放置预停点到放置点"
             ):
                 return 130
-            if arm_handoff_enabled:
-                if not self._handoff_until_success(
+            if arm_handoff_enabled and grasped:
+                if self._handoff_limited(
                     f"Round {round_index}: placement reached; handing control to the arm pipeline",
                     self.place_handoff,
                 ):
-                    return 130
-                self.get_logger().info(
-                    f"Round {round_index}: placement completed; resuming outdoor navigation"
+                    self.get_logger().info(
+                        f"Round {round_index}: placement completed; resuming outdoor navigation"
+                    )
+                else:
+                    self.get_logger().warning(
+                        f"Round {round_index}: target-box recognition/placement abandoned"
+                    )
+            elif arm_handoff_enabled:
+                self.get_logger().warning(
+                    f"Round {round_index}: skipping placement because pickup did not acquire a target"
                 )
             # After placement, leave the placement area through the same three
             # transit waypoints used after grasping (11 -> 12 -> 13), so the

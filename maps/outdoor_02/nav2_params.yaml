@@ -262,7 +262,7 @@ local_costmap:
       footprint: "[[0.31, 0.225], [0.31, -0.225], [-0.31, -0.225], [-0.31, 0.225]]"
       # Saved-map obstacles keep only a small geometric margin. Live lidar
       # obstacles receive their larger margin in dynamic_obstacle_buffer.
-      footprint_padding: 0.06
+      footprint_padding: 0.08
       # Use Nav2's standard composition order. The earlier experimental order
       # put StaticLayer last; changing its merge mode then exposed every close
       # lidar return at once and the 0.45 m inflation engulfed the robot.
@@ -291,7 +291,7 @@ local_costmap:
         # Mark on a single voxel so a ~0.30 m obstacle is not lost after the
         # height filter. The input is the filtered cloud, so ground noise is
         # already removed and cannot be marked a second time.
-        mark_threshold: 1
+        mark_threshold: 2
         unknown_threshold: 15
         observation_sources: filtered_cloud
         filtered_cloud:
@@ -303,10 +303,14 @@ local_costmap:
           # bounds matching so marking and ray clearing stay consistent.
           min_obstacle_height: -0.05
           max_obstacle_height: 1.35
-          # Ignore close body/mount reflections and observe obstacles earlier.
-          obstacle_min_range: 0.35
+          # Do not mark people walking along the chassis. Those cells sit
+          # inside the ray-start gap and the InflationLayer then keeps a
+          # halo forever. Close movers are handled by dynamic_obstacle_buffer.
+          obstacle_min_range: 1.00
           obstacle_max_range: 5.0
-          raytrace_min_range: 0.35
+          # Start clearing rays at the sensor so leftover near-body marks
+          # from a previous passer-by can be erased.
+          raytrace_min_range: 0.05
           raytrace_max_range: 6.0
           observation_persistence: 0.0
           expected_update_rate: 0.0
@@ -316,7 +320,7 @@ local_costmap:
         enabled: true
         # This is the saved-map margin used by the local controller. It is
         # broad enough to reject edge-skimming without closing narrow lanes.
-        inflation_radius: 0.42
+        inflation_radius: 0.55
         cost_scaling_factor: 5.0
         inflate_unknown: false
         inflate_around_unknown: false
@@ -326,17 +330,23 @@ local_costmap:
         enabled: true
         topic: /nav/filtered_obstacle_cloud
         map_topic: /map
-        # Live people and obstacles receive an earlier safety zone at 0.6 m/s.
-        inflation_radius: 0.75
-        inscribed_radius: 0.50
+        # Close movers must produce a visible halo. Only skip true self-hits
+        # inside the chassis; 0.42 m previously hid people just ahead.
+        inflation_radius: 0.60
+        inscribed_radius: 0.30
         cost_scaling_factor: 4.0
         min_obstacle_height: -0.05
         max_obstacle_height: 1.35
-        obstacle_min_range: 0.35
+        obstacle_min_range: 0.18
         obstacle_max_range: 5.0
-        observation_timeout: 0.25
+        ignore_robot_radius: 0.32
+        observation_timeout: 3.2
+        # Drop a vanished person after 1.2 s even if the next LIO frame has
+        # not arrived yet. Waiting a full 2.7 s frame plus leftovers felt
+        # like ~10 s of stuck inflation.
+        keep_duration_s: 1.2
         cluster_resolution: 0.25
-        min_points_per_cluster: 8
+        min_points_per_cluster: 12
 
       always_send_full_costmap: true
 
@@ -365,7 +375,7 @@ global_costmap:
       # weight and therefore cannot be traded away for a shorter edge path.
       # Global paths may approach saved map edges more closely; local dynamic
       # obstacle buffering still keeps a larger safety margin around live data.
-      footprint_padding: 0.06
+      footprint_padding: 0.08
       plugins: [static_layer, obstacle_layer, inflation_layer, dynamic_obstacle_buffer]
 
       static_layer:
@@ -390,9 +400,11 @@ global_costmap:
           clearing: true
           min_obstacle_height: -0.15
           max_obstacle_height: 1.70
-          obstacle_min_range: 0.35
+          # Same split as the local voxel layer: far static objects stay
+          # visible early, near-body passers-by are not permanently marked.
+          obstacle_min_range: 1.00
           obstacle_max_range: 10.0
-          raytrace_min_range: 0.35
+          raytrace_min_range: 0.05
           raytrace_max_range: 12.0
           observation_persistence: 0.0
           expected_update_rate: 0.0
@@ -402,7 +414,7 @@ global_costmap:
         # Make the global planner choose the centre of the white road instead
         # of skimming its unknown/occupied boundary.
         enabled: true
-        inflation_radius: 0.45
+        inflation_radius: 0.58
         cost_scaling_factor: 4.0
         inflate_unknown: false
         inflate_around_unknown: true
@@ -414,16 +426,18 @@ global_costmap:
         enabled: true
         topic: /nav/filtered_obstacle_cloud
         map_topic: /map
-        inflation_radius: 0.75
-        inscribed_radius: 0.50
+        inflation_radius: 0.60
+        inscribed_radius: 0.30
         cost_scaling_factor: 4.0
         min_obstacle_height: -0.05
         max_obstacle_height: 1.35
-        obstacle_min_range: 0.35
+        obstacle_min_range: 0.18
         obstacle_max_range: 5.0
-        observation_timeout: 0.25
+        ignore_robot_radius: 0.32
+        observation_timeout: 3.2
+        keep_duration_s: 1.2
         cluster_resolution: 0.25
-        min_points_per_cluster: 8
+        min_points_per_cluster: 12
 
       always_send_full_costmap: true
 

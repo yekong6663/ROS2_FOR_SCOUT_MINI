@@ -201,7 +201,7 @@ def _launch_navigation_system(context):
                 # ground/vehicle returns below the lidar and high tree foliage.
                 "min_obstacle_height": -0.05,
                 "max_obstacle_height": 1.35,
-                "min_range": 0.35,
+                "min_range": 0.18,
                 "max_range": 5.0,
                 "cell_size": 0.25,
                 "min_points_per_cell": 8,
