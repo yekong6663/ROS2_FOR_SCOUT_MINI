@@ -239,8 +239,8 @@ class Indoor03Route(TwoStagePoint3Dock):
                 "placement_observe_pose": [0.0, -35.5, 491.1, 180.0, 67.77, 89.97],
                 "base_target_alignment_enabled": True,
                 "base_aligned_place_enabled": False,
-                # Practical horizontal parking margin for the fixed release
-                # pose. The arm still requires a confident requested label.
+                # Park so the box label is near the taught center pixel, then
+                # release with the taught (u, v)->XY map.
                 "base_target_center_tolerance_norm": 0.12,
                 "label_marker_detection_enabled": False,
                 # Use the same live preview during box-label search so the
@@ -267,13 +267,13 @@ class Indoor03Route(TwoStagePoint3Dock):
             placement = self._call_service(
                 self._placement_execute,
                 Trigger.Request(),
-                label="calibrated placement",
+                label="taught-map placement",
                 timeout=float(self.get_parameter("arm_handoff_timeout").value),
             )
         finally:
             self._set_pipeline_parameters({"base_aligned_place_enabled": False})
         if not placement.success:
-            raise RuntimeError(f"calibrated placement failed: {placement.message}")
+            raise RuntimeError(f"taught-map placement failed: {placement.message}")
         return True
 
     def run_handoff_limited(self, label, operation):

@@ -60,6 +60,7 @@ bt_navigator:
       - nav2_is_battery_charging_condition_bt_node
       - scout_near_goal_condition_bt_node
       - scout_slow_forward_bt_node
+      - scout_escape_inflation_bt_node
     # Use the verified outdoor recovery tree.  The former outdoor_02-specific
     # file was empty, which prevented bt_navigator from activating at all.
     default_nav_to_pose_bt_xml: /home/nvidia/auto/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/scout_navigation_bringup/behavior_trees/navigate_to_pose_outdoor.xml
@@ -142,13 +143,13 @@ controller_server:
       # segments and keep the steering sign stable.
       wz_std: 0.18
       # Stable outdoor cruise limit. Keep this matched with the smoother so
-      # the controller can genuinely sustain 0.8 m/s on a straight segment.
-      vx_max: 0.80
+      # the controller can genuinely sustain 1.0 m/s on a straight segment.
+      vx_max: 1.00
       vx_min: 0.0
       vy_max: 0.0
-      # 0.60 keeps U-turns fluent at the higher cruise speed; matched by the
-      # smoother limit. Tight avoidance is still braking-first.
-      wz_max: 0.60
+      # 0.65 keeps U-turns fluent at 1.0 m/s (turn radius ~1.5 m); matched by
+      # the smoother limit. Tight avoidance is still braking-first.
+      wz_max: 0.65
       temperature: 0.30
       gamma: 0.02
       prune_distance: 2.0
@@ -539,12 +540,12 @@ velocity_smoother:
     feedback: OPEN_LOOP
     # Outdoor cruise ceiling. The bounded yaw settings below retain the
     # current straight, smooth driving behaviour.
-    max_velocity: [0.80, 0.0, 0.60]
+    max_velocity: [1.00, 0.0, 0.65]
     min_velocity: [-0.15, 0.0, -0.40]
     # Resume promptly after a dynamic obstacle has cleared, while keeping
     # braking stronger than acceleration at the outdoor cruise speed.
-    max_accel: [0.90, 0.0, 0.40]
-    max_decel: [-1.70, 0.0, -0.70]
+    max_accel: [1.00, 0.0, 0.40]
+    max_decel: [-1.90, 0.0, -0.70]
     odom_topic: /odom
     odom_duration: 0.2
     deadband_velocity: [0.0, 0.0, 0.0]

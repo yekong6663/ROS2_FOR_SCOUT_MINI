@@ -59,6 +59,7 @@ bt_navigator:
       - nav2_drive_on_heading_cancel_bt_node
       - nav2_is_battery_charging_condition_bt_node
       - scout_slow_forward_bt_node
+      - scout_escape_inflation_bt_node
     # Keep a valid lane path instead of replacing it every second, and never
     # use automatic Spin/BackUp recoveries near road or bridge boundaries.
     default_nav_to_pose_bt_xml: /home/nvidia/auto/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/scout_navigation_bringup/behavior_trees/navigate_to_pose_lane_safe.xml

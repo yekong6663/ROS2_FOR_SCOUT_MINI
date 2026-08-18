@@ -30,6 +30,16 @@ ament_target_dependencies(scout_slow_forward_bt_node
   rclcpp
   sensor_msgs)
 
+add_library(scout_escape_inflation_bt_node SHARED
+  src/escape_inflation_action.cpp)
+target_compile_definitions(scout_escape_inflation_bt_node PRIVATE BT_PLUGIN_EXPORT)
+ament_target_dependencies(scout_escape_inflation_bt_node
+  behaviortree_cpp_v3
+  geometry_msgs
+  nav_msgs
+  rclcpp
+  tf2_ros)
+
 add_library(scout_dynamic_obstacle_buffer_layer SHARED
   src/dynamic_obstacle_buffer_layer.cpp)
 ament_target_dependencies(scout_dynamic_obstacle_buffer_layer
@@ -68,6 +78,7 @@ install(PROGRAMS
 install(TARGETS
   scout_near_goal_condition_bt_node
   scout_slow_forward_bt_node
+  scout_escape_inflation_bt_node
   scout_dynamic_obstacle_buffer_layer
   LIBRARY DESTINATION lib)
 

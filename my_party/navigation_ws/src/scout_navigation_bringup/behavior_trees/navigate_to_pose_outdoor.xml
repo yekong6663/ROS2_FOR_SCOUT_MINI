@@ -39,14 +39,10 @@
               name="ClearGlobalCostmap"
               service_name="global_costmap/clear_entirely_global_costmap"/>
           </Sequence>
-          <Sequence name="RetreatOnlyNearGoal">
-            <ScoutNearGoal goal="{goal}" distance="2.5"/>
-            <BackUp
-              name="SafeNearGoalBackUp"
-              backup_dist="0.25"
-              backup_speed="0.08"/>
-            <Wait name="WaitForCostmapAfterBackUp" wait_duration="0.5"/>
-          </Sequence>
+          <ScoutEscapeInflation
+            name="EscapeInflation"
+            max_distance="0.45"
+            speed="0.08"/>
         </RoundRobin>
       </ReactiveFallback>
     </RecoveryNode>

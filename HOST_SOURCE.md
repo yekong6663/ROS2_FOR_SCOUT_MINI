@@ -141,6 +141,12 @@ source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 ros2 launch scout_base scout_mini_base.launch.py port_name:=can2
 ```
 
+```bash
+# 开导航前检查遥控器：SWB 最上、摇杆回中。必须 vehicle_state=0、control_mode=1（CAN）、error_code=0
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+ros2 topic echo /scout_status --once | grep -E 'vehicle_state|control_mode|error_code'
+```
+
 ## 6. 启动导航
 
 以室内地图为例：
@@ -170,12 +176,13 @@ RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
 ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
 
 # 无红旗和机械臂接管直接去抓取
-SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
+SKIP_OUTBOUND=1 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
 ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
 
-# 有红旗和机械臂接管直接去抓取
+# 有红旗和机械臂接管；跳过去程，但会先沿车道到接近点再进抓取预停
 SKIP_OUTBOUND=1 \
 ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+
 ```
 
 
@@ -190,7 +197,7 @@ ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
 ~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02
 ```
 
-启动后依次确认雷达点云、FAST-LIO2 里程计、`/scout_status` 与重定位状态正常，再发送导航目标。
+启动后依次确认雷达点云、FAST-LIO2 里程计、重定位状态，以及上一节的 `/scout_status`（`vehicle_state: 0`、`control_mode: 1`、`error_code: 0`），再发送导航目标。
 
 ## 7. 启动建图
 

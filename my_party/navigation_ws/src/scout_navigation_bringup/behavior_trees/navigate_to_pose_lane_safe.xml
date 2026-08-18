@@ -1,6 +1,7 @@
 <!-- Safe lane-following tree for Scout Mini.
-     A failed plan/controller may clear transient costmap data and replan, but
-     it must never bypass collision checking with an open-loop forward drive. -->
+     A failed plan/controller may reverse out of unexpected inflation, then
+     clear transient costmap data and replan. It must never bypass collision
+     checking with an open-loop forward drive. -->
 <root main_tree_to_execute="MainTree">
   <BehaviorTree ID="MainTree">
     <RecoveryNode number_of_retries="4" name="NavigateLaneSafe">
@@ -23,15 +24,23 @@
       </PipelineSequence>
       <ReactiveFallback name="ClearTransientObstaclesThenReplan">
         <GoalUpdated/>
-        <Sequence>
-          <ClearEntireCostmap
-            name="ClearLocalCostmapAfterNavigationFailure"
-            service_name="local_costmap/clear_entirely_local_costmap"/>
-          <ClearEntireCostmap
-            name="ClearGlobalCostmapAfterNavigationFailure"
-            service_name="global_costmap/clear_entirely_global_costmap"/>
-          <Wait wait_duration="0.5"/>
-        </Sequence>
+        <RoundRobin name="SafeRecoveryActions">
+          <!-- General-point only: reverse out of unexpected inflation if the
+               rear cells are not lethal/unknown. Grasp/place trees omit this. -->
+          <ScoutEscapeInflation
+            name="EscapeInflation"
+            max_distance="0.45"
+            speed="0.08"/>
+          <Sequence>
+            <ClearEntireCostmap
+              name="ClearLocalCostmapAfterNavigationFailure"
+              service_name="local_costmap/clear_entirely_local_costmap"/>
+            <ClearEntireCostmap
+              name="ClearGlobalCostmapAfterNavigationFailure"
+              service_name="global_costmap/clear_entirely_global_costmap"/>
+            <Wait wait_duration="0.5"/>
+          </Sequence>
+        </RoundRobin>
       </ReactiveFallback>
     </RecoveryNode>
   </BehaviorTree>

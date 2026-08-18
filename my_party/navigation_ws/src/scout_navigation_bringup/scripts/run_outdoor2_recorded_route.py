@@ -74,6 +74,21 @@ CONTINUOUS_BEHAVIOR_TREE = str(
     SOURCE_ROOT / "behavior_trees/navigate_through_poses_outdoor2_continuous.xml"
 )
 PRECISION_POINT_NUMBERS = {9, 10, 14, 15}
+STAGING_POINT_NUMBERS = {9, 14}
+# On-road lead-in used when SKIP_OUTBOUND starts far from the grasp staging
+# pose. Going straight from the origin to (-18.6, 3.6) cuts across the gray
+# roadside; this recorded lane point stays on the road first.
+SKIP_OUTBOUND_LANE_APPROACH = (
+    13,
+    -8.372,
+    -0.762,
+    3.103,
+    "跳过去程车道接近点",
+)
+SKIP_OUTBOUND_DIRECT_STAGING_M = 8.0
+CRUISE_SPEED_MPS = 0.80
+STAGING_APPROACH_SPEED_MPS = 0.60
+CRUISE_YAW_LIMIT_RADPS = 0.60
 RED_FLAG_GATE = "/home/nvidia/auto/Robot_arm/source/scripts/wait_for_red_flag_start.sh"
 STARTUP_FORWARD_HELPER = SOURCE_ROOT / "scripts/safe_startup_forward.py"
 
@@ -107,6 +122,8 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         self.declare_parameter("handoff_retry_delay", 5.0)
         self.declare_parameter("arm_handoff_timeout", 900.0)
         self.declare_parameter("recognition_max_retries", 2)
+        self.declare_parameter("cruise_speed", CRUISE_SPEED_MPS)
+        self.declare_parameter("staging_approach_speed", STAGING_APPROACH_SPEED_MPS)
         # precision_behavior_tree is declared by the TwoStagePoint3Dock base
         # (same default path); do not redeclare it here.
         self.declare_parameter("continuous_behavior_tree", CONTINUOUS_BEHAVIOR_TREE)
@@ -148,6 +165,12 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         )
         self._placement_execute = self.create_client(
             Trigger, "/grasp_pipeline/execute_aligned_place"
+        )
+        self._controller_set_parameters = self.create_client(
+            SetParameters, "/controller_server/set_parameters"
+        )
+        self._smoother_set_parameters = self.create_client(
+            SetParameters, "/velocity_smoother/set_parameters"
         )
         self._pipeline_result_sequence = 0
         self._pipeline_result = None
@@ -211,6 +234,51 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         ]
         if failures:
             raise RuntimeError("grasp pipeline parameter update failed: " + "; ".join(failures))
+
+    def _set_nav_cruise_speed(self, speed_mps):
+        """Cap MPPI and the velocity smoother to the same forward limit."""
+        vx = max(0.05, float(speed_mps))
+        yaw = CRUISE_YAW_LIMIT_RADPS
+        updates = (
+            (
+                self._controller_set_parameters,
+                [Parameter(name="FollowPath.vx_max", value=vx)],
+                "controller FollowPath.vx_max",
+            ),
+            (
+                self._smoother_set_parameters,
+                [Parameter(name="max_velocity", value=[vx, 0.0, yaw])],
+                "velocity_smoother max_velocity",
+            ),
+        )
+        for client, parameters, label in updates:
+            request = SetParameters.Request()
+            request.parameters = [item.to_parameter_msg() for item in parameters]
+            response = self._call_service(
+                client, request, label=label, timeout=4.0
+            )
+            failures = [
+                result.reason or "rejected"
+                for result in response.results
+                if not result.successful
+            ]
+            if failures:
+                raise RuntimeError(f"{label} failed: " + "; ".join(failures))
+
+    def _nav_speed_for_staging_approach(self):
+        try:
+            return max(
+                0.05,
+                float(self.get_parameter("staging_approach_speed").value),
+            )
+        except Exception:
+            return STAGING_APPROACH_SPEED_MPS
+
+    def _nav_speed_for_cruise(self):
+        try:
+            return max(0.05, float(self.get_parameter("cruise_speed").value))
+        except Exception:
+            return CRUISE_SPEED_MPS
 
     def preflight_arm_pipeline(self):
         response = self._call_service(
@@ -307,8 +375,8 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             "observation_speed": 25,
             "base_target_alignment_enabled": True,
             "base_aligned_place_enabled": False,
-            # Stop with the verified box label within ±12% of image center;
-            # identity remains strict and does not accept color-only regions.
+            # Park so the box label is near the taught center pixel, then
+            # release with the taught (u, v)->XY map.
             "base_target_center_tolerance_norm": 0.12,
             "label_marker_detection_enabled": False,
             "continuous_search_enabled": True,
@@ -328,13 +396,13 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         self._set_pipeline_parameters({"base_aligned_place_enabled": True})
         try:
             placement = self._call_service(
-                self._placement_execute, Trigger.Request(), label="calibrated placement",
+                self._placement_execute, Trigger.Request(), label="taught-map placement",
                 timeout=float(self.get_parameter("arm_handoff_timeout").value),
             )
         finally:
             self._set_pipeline_parameters({"base_aligned_place_enabled": False})
         if not placement.success:
-            raise RuntimeError(f"calibrated placement failed: {placement.message}")
+            raise RuntimeError(f"taught-map placement failed: {placement.message}")
         self._target_item_id = ""
         return True
 
@@ -450,6 +518,18 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
                 f"低速靠近（{goal_name}）"
             )
             try:
+                if _point_number in STAGING_POINT_NUMBERS:
+                    try:
+                        approach_speed = self._nav_speed_for_staging_approach()
+                        self._set_nav_cruise_speed(approach_speed)
+                        self.get_logger().info(
+                            f"{label}：下一目标是预停点，巡航降为 "
+                            f"{approach_speed:.2f} m/s"
+                        )
+                    except Exception as error:
+                        self.get_logger().warning(
+                            f"{label}：未能把预停点速度降到 0.6 m/s（{error}）；仍按当前限速前往"
+                        )
                 if not self._navigate_to_staging():
                     raise RuntimeError("staging navigation failed")
                 if self._crawl_to_goal():
@@ -459,6 +539,13 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             except Exception as error:
                 self._stop()
                 self.get_logger().warning(f"{label} 未完成（{error}）；等待后重试")
+            finally:
+                try:
+                    self._set_nav_cruise_speed(self._nav_speed_for_cruise())
+                except Exception as error:
+                    self.get_logger().warning(
+                        f"{label}：未能恢复巡航速度（{error}）"
+                    )
             self._wait_before_retry()
             attempt += 1
         return False
@@ -1154,13 +1241,28 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         if not self._wait_for_server():
             return 130
 
-        # Temporary debug switch: SKIP_OUTBOUND=1 starts the mission directly
-        # at the first dock pre-stop from wherever the chassis currently is,
-        # skipping the outbound leg entirely.
+        # SKIP_OUTBOUND=1 skips the long outbound (points 0/1/7/8). If the
+        # chassis is still far from the grasp staging pose, first follow the
+        # recorded lane to point 13 so Nav2 does not cut across the roadside.
         if os.environ.get("SKIP_OUTBOUND", "0") == "1":
-            self.get_logger().warning(
-                "SKIP_OUTBOUND=1：跳过去程，直接进入工作循环（当前位姿开始）"
+            pickup_staging = WORK_CYCLE_POINTS[0]
+            pose = self._wait_for_pose(timeout=5.0)
+            staging_range_m = (
+                math.hypot(pose[0] - pickup_staging[1], pose[1] - pickup_staging[2])
+                if pose is not None
+                else float("inf")
             )
+            if staging_range_m > SKIP_OUTBOUND_DIRECT_STAGING_M:
+                self.get_logger().warning(
+                    "SKIP_OUTBOUND=1：先沿车道到接近点，再进抓取预停，"
+                    f"避免斜着冲路边（距预停 {staging_range_m:.1f} m）"
+                )
+                if not self._navigate_until_success(SKIP_OUTBOUND_LANE_APPROACH):
+                    return 130
+            else:
+                self.get_logger().warning(
+                    "SKIP_OUTBOUND=1：已靠近预停，直接进入工作循环"
+                )
         else:
             outbound_label = "前置点、目标点1至回原点2（跳过小路和大柱子）"
             if not self._navigate_sequence_until_success(OUTBOUND_POINTS, outbound_label):

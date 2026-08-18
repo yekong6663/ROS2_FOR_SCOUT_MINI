@@ -31,6 +31,10 @@
             <ClearEntireCostmap name="ClearGlobalCostmap"
               service_name="global_costmap/clear_entirely_global_costmap"/>
           </Sequence>
+          <ScoutEscapeInflation
+            name="EscapeInflation"
+            max_distance="0.45"
+            speed="0.08"/>
         </RoundRobin>
       </ReactiveFallback>
     </RecoveryNode>
