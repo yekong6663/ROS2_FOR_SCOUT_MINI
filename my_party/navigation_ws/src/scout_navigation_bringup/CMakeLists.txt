@@ -68,6 +68,8 @@ install(PROGRAMS
   scripts/ensure_map_server_active.py
   scripts/run_outdoor2_recorded_route.py
   scripts/run_outdoor2_recorded_route.sh
+  scripts/run_outdoor03_recorded_route.py
+  scripts/run_outdoor03_recorded_route.sh
   scripts/run_outdoor_recorded_route.py
   scripts/run_indoor_recorded_route.sh
   scripts/run_indoor03_recorded_route.sh

@@ -117,11 +117,21 @@ def _launch_navigation_system(context):
         raise RuntimeError(f"Nav2 map image does not exist: {image_path}")
 
     pose_file_argument = LaunchConfiguration("initial_pose_file").perform(context)
-    pose_file = (
-        Path(pose_file_argument).expanduser().resolve()
-        if pose_file_argument
-        else map_dir / "initial_pose.yaml"
-    )
+    skip_outbound = os.environ.get("SKIP_OUTBOUND", "0") == "1"
+    skip_pose_file = map_dir / "skip_outbound_initial_pose.yaml"
+    if pose_file_argument:
+        pose_file = Path(pose_file_argument).expanduser().resolve()
+    elif skip_outbound:
+        if not skip_pose_file.is_file():
+            raise RuntimeError(
+                "SKIP_OUTBOUND=1 需要 "
+                f"{skip_pose_file}（跳过去程的重定位初值）。"
+                "请先录这个位姿，或启动导航时加上 "
+                "initial_pose_file:=/path/to/pose.yaml"
+            )
+        pose_file = skip_pose_file
+    else:
+        pose_file = map_dir / "initial_pose.yaml"
     fastlio_share = get_package_share_directory("fastlio2")
     localizer_share = get_package_share_directory("localizer")
     livox_share = get_package_share_directory("livox_ros_driver2")

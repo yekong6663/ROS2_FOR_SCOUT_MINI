@@ -264,6 +264,10 @@ ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 ros2 launch scout_navigation_bringup navigation_system.launch.py \
   map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02 can_port:=can2
+
+# 跳过去程：导航也要带 SKIP_OUTBOUND=1，使用 skip_outbound_initial_pose.yaml
+SKIP_OUTBOUND=1 ros2 launch scout_navigation_bringup navigation_system.launch.py \
+  map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02 can_port:=can2
 ```
 
 ### 2. 启动路线脚本（另一个终端，环境变量控制模式）

@@ -153,12 +153,13 @@ ros2 topic echo /scout_status --once | grep -E 'vehicle_state|control_mode|error
 
 ```bash
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
-ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02 can_port:=can2
-
+# outdoor_03（地图和路点采完后再开；路线用 run_outdoor03_recorded_route.sh）
 ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_03 can_port:=can2
 
-# 室内
-ros2 launch scout_navigation_bringup navigation_system.launch.py map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/indoor_03 can_port:=can2
+# 跳过去程：导航也要带 SKIP_OUTBOUND=1，才会用 skip_outbound_initial_pose.yaml
+SKIP_OUTBOUND=1 ros2 launch scout_navigation_bringup navigation_system.launch.py \
+  map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_03 can_port:=can2
+
 ```
 设置 500K 波特率并启用接口：
 
@@ -171,33 +172,23 @@ sudo ip link set can2 up type can bitrate 500000
 ```bash
 source /home/nvidia/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 
-# 无红旗和机械臂接管也不会去抓取
+# 无红旗和无机械臂接管也不会去抓取，直接导航
 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
-ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 
-# 无红旗和机械臂接管直接去抓取
+# 跳过去程：导航启动也要 SKIP_OUTBOUND=1（用 skip_outbound_initial_pose.yaml）
 SKIP_OUTBOUND=1 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
-ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 
-# 有红旗和机械臂接管；跳过去程，但会先沿车道到接近点再进抓取预停
+# 有红旗和机械臂接管 + 跳过去程（导航同样要 SKIP_OUTBOUND=1）
 SKIP_OUTBOUND=1 \
-ros2 run scout_navigation_bringup run_outdoor2_recorded_route.sh
+ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
+
+# 全程完整
+ros2 run scout_navigation_bringup run_outdoor3_recorded_route.sh
 
 ```
 
-
-
-
-可替换的地图目录：
-
-```bash
-~/auto/ROS2_FOR_SCOUT_MINI/maps/indoor_01
-~/auto/ROS2_FOR_SCOUT_MINI/maps/site_01
-~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_01
-~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_02
-```
-
-启动后依次确认雷达点云、FAST-LIO2 里程计、重定位状态，以及上一节的 `/scout_status`（`vehicle_state: 0`、`control_mode: 1`、`error_code: 0`），再发送导航目标。
 
 ## 7. 启动建图
 

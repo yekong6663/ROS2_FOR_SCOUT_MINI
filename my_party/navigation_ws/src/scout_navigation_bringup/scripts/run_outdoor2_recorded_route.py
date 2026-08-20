@@ -87,7 +87,9 @@ SKIP_OUTBOUND_LANE_APPROACH = (
 )
 SKIP_OUTBOUND_DIRECT_STAGING_M = 8.0
 CRUISE_SPEED_MPS = 0.80
-STAGING_APPROACH_SPEED_MPS = 0.60
+# Slower approach to a staging pre-stop or the mission end, so the chassis
+# never rushes the last meters before stopping (reduced to 0.30).
+STAGING_APPROACH_SPEED_MPS = 0.30
 CRUISE_YAW_LIMIT_RADPS = 0.60
 RED_FLAG_GATE = "/home/nvidia/auto/Robot_arm/source/scripts/wait_for_red_flag_start.sh"
 STARTUP_FORWARD_HELPER = SOURCE_ROOT / "scripts/safe_startup_forward.py"
