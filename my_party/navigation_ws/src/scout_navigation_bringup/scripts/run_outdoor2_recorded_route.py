@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Run the outdoor_02 route with two complete grasp-and-place handoffs.
+"""Run outdoor_02 with two navigation/arm ownership handoff cycles.
 
-The route reaches points 1--8 once.  It then runs points 9--15 twice; each
-round hands control to the arm at point 10 to acquire the target selected by
-the photo card, and at point 15 to align and release it into its labelled box.
-Navigation and arm services stay in one persistent ROS process throughout.
+The route reaches points 1--8 once. Each work round stops Nav2 at pickup
+pre-stop point 9. The arm pipeline identifies the photo card, advances Scout
+0.70 m by odometry and scans/grabs the selected object. Nav2 then reaches the
+placement point 15; the arm aligns the labelled box and releases. Navigation
+owns all motion again immediately after each release, including the final one.
 """
 
 import json
@@ -126,6 +127,13 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         self.declare_parameter("recognition_max_retries", 2)
         self.declare_parameter("cruise_speed", CRUISE_SPEED_MPS)
         self.declare_parameter("staging_approach_speed", STAGING_APPROACH_SPEED_MPS)
+        # Defaults preserve outdoor_02 behavior. Map-specific route runners
+        # may tighten these without changing the shared docking implementation.
+        self.declare_parameter("dock_position_tolerance", 0.10)
+        self.declare_parameter("dock_yaw_tolerance", 0.12)
+        self.declare_parameter("dock_crawl_speed", 0.15)
+        self.declare_parameter("dock_staging_start_position_tolerance", 0.08)
+        self.declare_parameter("dock_staging_start_yaw_tolerance", 0.08)
         # precision_behavior_tree is declared by the TwoStagePoint3Dock base
         # (same default path); do not redeclare it here.
         self.declare_parameter("continuous_behavior_tree", CONTINUOUS_BEHAVIOR_TREE)
@@ -337,6 +345,12 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             "confirm": False,
             "place_after_grasp": False,
             "base_grasp_scan_enabled": True,
+            # Nav2 deliberately stops at point 9.  After identifying the
+            # target card, the arm's odometry-closed-loop controller moves
+            # this short, measured leg before the target-object scan begins.
+            "base_grasp_pre_scan_advance_m": 0.70,
+            "base_grasp_pre_scan_speed_mps": 0.10,
+            "base_grasp_pre_scan_timeout_s": 20.0,
             "target_card_base_search_enabled": True,
             "move_to_placement_observation_after_grasp": True,
             "continuous_search_enabled": True,
@@ -377,6 +391,9 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             "observation_speed": 25,
             "base_target_alignment_enabled": True,
             "base_aligned_place_enabled": False,
+            # The release returns the arm home, but leaves the chassis still.
+            # The recorded Nav2 route is the sole owner of the next motion.
+            "post_place_base_advance_enabled": False,
             # Park so the box label is near the taught center pixel, then
             # release with the taught (u, v)->XY map.
             "base_target_center_tolerance_norm": 0.12,
@@ -402,7 +419,15 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
                 timeout=float(self.get_parameter("arm_handoff_timeout").value),
             )
         finally:
-            self._set_pipeline_parameters({"base_aligned_place_enabled": False})
+            # Restore dashboard defaults after the one-shot route handoff.
+            # The release itself has already returned home without moving the
+            # base; subsequent navigation owns the chassis.
+            self._set_pipeline_parameters(
+                {
+                    "base_aligned_place_enabled": False,
+                    "post_place_base_advance_enabled": True,
+                }
+            )
         if not placement.success:
             raise RuntimeError(f"taught-map placement failed: {placement.message}")
         self._target_item_id = ""
@@ -495,9 +520,21 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
                 "goal_x": gx,
                 "goal_y": gy,
                 "goal_yaw": gyaw,
-                "position_tolerance": 0.10,
-                "yaw_tolerance": 0.12,
-                "crawl_speed": 0.15,
+                "position_tolerance": float(
+                    self.get_parameter("dock_position_tolerance").value
+                ),
+                "yaw_tolerance": float(
+                    self.get_parameter("dock_yaw_tolerance").value
+                ),
+                # Final crawl must begin at the recorded pre-stop again even
+                # if map localization corrected itself while waiting to settle.
+                "staging_start_position_tolerance": float(
+                    self.get_parameter("dock_staging_start_position_tolerance").value
+                ),
+                "staging_start_yaw_tolerance": float(
+                    self.get_parameter("dock_staging_start_yaw_tolerance").value
+                ),
+                "crawl_speed": float(self.get_parameter("dock_crawl_speed").value),
                 "crawl_timeout": 45.0,
                 "max_yaw_rate": 0.16,
                 "alignment_tolerance": 0.04,
@@ -1274,9 +1311,9 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             self._target_item_id = ""
             self.get_logger().info(f"Starting outdoor_02 grasp/place round {round_index}/2")
             pickup_staging, pickup, transit_1, transit_2, transit_3, place_staging, place = WORK_CYCLE_POINTS
-            if not self._dock_until_success(
-                pickup_staging, pickup, f"第 {round_index} 轮待抓取点到抓取点"
-            ):
+            # Do not send Nav2 to the legacy pickup point 10.  It is now the
+            # arm pipeline's 0.70 m pre-scan advance from the safe pre-stop.
+            if not self._navigate_until_success(pickup_staging):
                 return 130
             grasped = False
             if arm_handoff_enabled:

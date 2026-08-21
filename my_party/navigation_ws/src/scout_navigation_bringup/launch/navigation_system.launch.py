@@ -215,6 +215,14 @@ def _launch_navigation_system(context):
                 "max_range": 5.0,
                 "cell_size": 0.25,
                 "min_points_per_cell": 8,
+                # Remove the road plane before density filtering. This keeps
+                # a dense grazing/reflective ground return from becoming a
+                # false dynamic obstacle in an otherwise empty plaza.
+                "ground_filter_enabled": True,
+                "ground_seed_max_height": 0.20,
+                "ground_fit_threshold": 0.08,
+                "ground_clearance": 0.12,
+                "ground_min_samples": 60,
             }
         ],
         condition=IfCondition(start_localization),

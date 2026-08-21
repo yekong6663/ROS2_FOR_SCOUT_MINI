@@ -46,6 +46,11 @@ class TwoStagePoint3Dock(Node):
         self.declare_parameter("goal_yaw", 3.113)
         self.declare_parameter("position_tolerance", 0.10)
         self.declare_parameter("yaw_tolerance", 0.12)
+        # The map pose is sampled again after localization settles. Do not
+        # begin an odometry-locked final crawl if that correction moved the
+        # robot away from the recorded staging/pre-stop pose.
+        self.declare_parameter("staging_start_position_tolerance", 0.10)
+        self.declare_parameter("staging_start_yaw_tolerance", 0.12)
         self.declare_parameter("crawl_speed", 0.14)
         self.declare_parameter("crawl_timeout", 45.0)
         self.declare_parameter("max_yaw_rate", 0.16)
@@ -301,6 +306,31 @@ class TwoStagePoint3Dock(Node):
         map_start, odom_start = start
         map_x, map_y, map_yaw = map_start
         odom_x, odom_y, odom_yaw = odom_start
+        staging_x = float(self.get_parameter("staging_x").value)
+        staging_y = float(self.get_parameter("staging_y").value)
+        staging_yaw = float(self.get_parameter("staging_yaw").value)
+        staging_position_tolerance = float(
+            self.get_parameter("staging_start_position_tolerance").value
+        )
+        staging_yaw_tolerance = float(
+            self.get_parameter("staging_start_yaw_tolerance").value
+        )
+        staging_position_error = math.hypot(map_x - staging_x, map_y - staging_y)
+        staging_yaw_error = abs(normalize(map_yaw - staging_yaw))
+        if (
+            staging_position_error > staging_position_tolerance or
+            staging_yaw_error > staging_yaw_tolerance
+        ):
+            self._stop()
+            self.get_logger().warning(
+                "Final crawl blocked: localization settled away from the "
+                "recorded staging pose "
+                f"(position={staging_position_error:.3f}m/"
+                f"{staging_position_tolerance:.3f}m, yaw="
+                f"{staging_yaw_error:.3f}rad/{staging_yaw_tolerance:.3f}rad); "
+                "returning to the recorded staging pose before retry"
+            )
+            return False
         dx, dy = goal_x - map_x, goal_y - map_y
         target_travel = math.cos(goal_yaw) * dx + math.sin(goal_yaw) * dy
         initial_lateral_error = -math.sin(goal_yaw) * dx + math.cos(goal_yaw) * dy

@@ -1,9 +1,9 @@
-# Used when launching navigation with SKIP_OUTBOUND=1.
-# Record this after mapping. Map frame, base_link center.
+# Used when launching outdoor_03 navigation with SKIP_OUTBOUND=1.
+# Recorded point 2: 拐弯2. Map frame, base_link center.
 initial_pose:
-  x: 0.0
-  y: 0.0
+  x: 42.47
+  y: -28.19
   z: 0.0
-  yaw: 0.0
+  yaw: -1.569
   pitch: 0.0
   roll: 0.0

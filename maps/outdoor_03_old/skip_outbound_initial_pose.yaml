@@ -1,0 +1,9 @@
+# Used when launching navigation with SKIP_OUTBOUND=1.
+# Map frame, base_link center.
+initial_pose:
+  x: 0.0
+  y: 0.0
+  z: 0.0
+  yaw: 0.0
+  pitch: 0.0
+  roll: 0.0

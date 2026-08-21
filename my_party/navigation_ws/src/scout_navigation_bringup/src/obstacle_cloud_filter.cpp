@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <memory>
@@ -20,6 +21,71 @@ struct Point
   float z;
 };
 
+struct GroundPlane
+{
+  double a{0.0};
+  double b{0.0};
+  double c{0.0};
+};
+
+bool fitPlane(const std::vector<Point> & points, GroundPlane & plane)
+{
+  if (points.size() < 30U) {
+    return false;
+  }
+
+  // Least-squares plane in the sensor frame: z = ax + by + c.  A second
+  // inlier-only fit below keeps low returns from curbs and wheels from
+  // pulling the fitted road plane upward.
+  std::array<std::array<double, 4>, 3> matrix{};
+  for (const auto & point : points) {
+    const double x = point.x;
+    const double y = point.y;
+    const double z = point.z;
+    matrix[0][0] += x * x;
+    matrix[0][1] += x * y;
+    matrix[0][2] += x;
+    matrix[0][3] += x * z;
+    matrix[1][0] += x * y;
+    matrix[1][1] += y * y;
+    matrix[1][2] += y;
+    matrix[1][3] += y * z;
+    matrix[2][0] += x;
+    matrix[2][1] += y;
+    matrix[2][2] += 1.0;
+    matrix[2][3] += z;
+  }
+  for (size_t column = 0; column < 3; ++column) {
+    size_t pivot = column;
+    for (size_t row = column + 1; row < 3; ++row) {
+      if (std::abs(matrix[row][column]) > std::abs(matrix[pivot][column])) {
+        pivot = row;
+      }
+    }
+    if (std::abs(matrix[pivot][column]) < 1e-8) {
+      return false;
+    }
+    std::swap(matrix[column], matrix[pivot]);
+    const double divisor = matrix[column][column];
+    for (size_t entry = column; entry < 4; ++entry) {
+      matrix[column][entry] /= divisor;
+    }
+    for (size_t row = 0; row < 3; ++row) {
+      if (row == column) {
+        continue;
+      }
+      const double factor = matrix[row][column];
+      for (size_t entry = column; entry < 4; ++entry) {
+        matrix[row][entry] -= factor * matrix[column][entry];
+      }
+    }
+  }
+  plane = GroundPlane{matrix[0][3], matrix[1][3], matrix[2][3]};
+  // A fitted near-vertical plane is never a road plane. Reject it instead of
+  // accidentally removing a wall or a person when localization is poor.
+  return std::abs(plane.a) < 0.45 && std::abs(plane.b) < 0.45;
+}
+
 class ObstacleCloudFilter : public rclcpp::Node
 {
 public:
@@ -34,6 +100,11 @@ public:
     max_range_ = declare_parameter<double>("max_range", 5.0);
     cell_size_ = declare_parameter<double>("cell_size", 0.25);
     min_points_per_cell_ = declare_parameter<int>("min_points_per_cell", 8);
+    ground_filter_enabled_ = declare_parameter<bool>("ground_filter_enabled", true);
+    ground_seed_max_height_ = declare_parameter<double>("ground_seed_max_height", 0.20);
+    ground_fit_threshold_ = declare_parameter<double>("ground_fit_threshold", 0.08);
+    ground_clearance_ = declare_parameter<double>("ground_clearance", 0.12);
+    ground_min_samples_ = declare_parameter<int>("ground_min_samples", 60);
 
     publisher_ = create_publisher<sensor_msgs::msg::PointCloud2>(output_topic_, rclcpp::SensorDataQoS());
     subscription_ = create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -44,6 +115,8 @@ public:
 private:
   void callback(const sensor_msgs::msg::PointCloud2::SharedPtr cloud)
   {
+    std::vector<Point> raw_points;
+    std::vector<Point> ground_seeds;
     std::vector<Point> candidates;
     std::unordered_map<int64_t, int> occupancy;
     try {
@@ -51,8 +124,7 @@ private:
       sensor_msgs::PointCloud2ConstIterator<float> y(*cloud, "y");
       sensor_msgs::PointCloud2ConstIterator<float> z(*cloud, "z");
       for (; x != x.end(); ++x, ++y, ++z) {
-        if (!std::isfinite(*x) || !std::isfinite(*y) || !std::isfinite(*z) ||
-          *z < min_height_ || *z > max_height_)
+        if (!std::isfinite(*x) || !std::isfinite(*y) || !std::isfinite(*z))
         {
           continue;
         }
@@ -60,13 +132,54 @@ private:
         if (range < min_range_ || range > max_range_) {
           continue;
         }
-        candidates.push_back(Point{*x, *y, *z});
-        ++occupancy[cellKey(*x, *y)];
+        const Point point{*x, *y, *z};
+        raw_points.push_back(point);
+        // Ground is normally below the sensor. Retain these low points only
+        // for plane estimation; they are never published as obstacles.
+        if (ground_filter_enabled_ && point.z <= ground_seed_max_height_ &&
+          point.z >= -1.50F)
+        {
+          ground_seeds.push_back(point);
+        }
       }
     } catch (const std::runtime_error & error) {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
         "Obstacle cloud has no usable xyz fields: %s", error.what());
       return;
+    }
+
+    GroundPlane ground;
+    bool have_ground = false;
+    if (ground_filter_enabled_ &&
+      ground_seeds.size() >= static_cast<size_t>(std::max(30, ground_min_samples_)))
+    {
+      GroundPlane first_fit;
+      if (fitPlane(ground_seeds, first_fit)) {
+        std::vector<Point> inliers;
+        inliers.reserve(ground_seeds.size());
+        for (const auto & point : ground_seeds) {
+          const double predicted = first_fit.a * point.x + first_fit.b * point.y + first_fit.c;
+          if (std::abs(point.z - predicted) <= ground_fit_threshold_) {
+            inliers.push_back(point);
+          }
+        }
+        have_ground = inliers.size() >= static_cast<size_t>(std::max(30, ground_min_samples_)) &&
+          fitPlane(inliers, ground);
+      }
+    }
+
+    for (const auto & point : raw_points) {
+      if (point.z < min_height_ || point.z > max_height_) {
+        continue;
+      }
+      if (have_ground) {
+        const double ground_z = ground.a * point.x + ground.b * point.y + ground.c;
+        if (point.z <= ground_z + ground_clearance_) {
+          continue;
+        }
+      }
+      candidates.push_back(point);
+      ++occupancy[cellKey(point.x, point.y)];
     }
 
     sensor_msgs::msg::PointCloud2 filtered;
@@ -113,6 +226,11 @@ private:
   double max_range_;
   double cell_size_;
   int min_points_per_cell_;
+  bool ground_filter_enabled_;
+  double ground_seed_max_height_;
+  double ground_fit_threshold_;
+  double ground_clearance_;
+  int ground_min_samples_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
 };

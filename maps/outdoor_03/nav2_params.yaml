@@ -109,17 +109,17 @@ controller_server:
       xy_goal_tolerance: 0.10
       yaw_goal_tolerance: 0.12
 
-    # Dock staging poses are intermediate: the position must be accurate (the
-    # odometry-locked crawl starts from it) and the heading should be roughly
-    # respected, but not as tightly as the final grasp/place point. A 0.12 rad
-    # yaw window stalls forever on lidar-localization noise; 0.30 rad (17 deg)
-    # still aligns the chassis while the crawl finishes the yaw with wheel
-    # odometry.
+    # Every grab/place pre-stop is a high-precision staging pose. Keep the
+    # proven outdoor_03_old profile so normal LIO correction does not make a
+    # correctly reached pre-stop circle indefinitely.
     staging_goal_checker:
       plugin: nav2_controller::SimpleGoalChecker
+      # Retain the proven outdoor_03_old arrival behavior. The route performs
+      # a separate post-arrival localization/staging check before the final
+      # crawl, so this checker need not continuously chase lidar corrections.
       stateful: true
       xy_goal_tolerance: 0.10
-      yaw_goal_tolerance: 0.30
+      yaw_goal_tolerance: 0.12
 
     FollowPath:
       # MPPI evaluates complete future trajectories instead of steering toward
@@ -333,9 +333,12 @@ local_costmap:
         map_topic: /map
         # Close movers must produce a visible halo. Only skip true self-hits
         # inside the chassis; 0.42 m previously hid people just ahead.
-        inflation_radius: 0.60
+        # Live lidar obstacles need a larger personal-safety margin than the
+        # saved road boundary.  This catches a standing 0.8 m obstacle early
+        # enough for the controller to choose a side instead of braking late.
+        inflation_radius: 0.85
         inscribed_radius: 0.30
-        cost_scaling_factor: 4.0
+        cost_scaling_factor: 3.0
         min_obstacle_height: -0.05
         max_obstacle_height: 1.35
         obstacle_min_range: 0.18
@@ -390,23 +393,24 @@ global_costmap:
         enabled: true
         footprint_clearing_enabled: true
         combination_method: 1
-        # Raw body cloud gives the global planner a long 10 m view so a new
-        # obstacle is avoided before the local controller reaches it. The
-        # -0.15 m lower height bound rejects ground returns.
-        observation_sources: body_cloud
-        body_cloud:
-          topic: /fastlio2/body_cloud
+        # Use exactly the same filtered obstacle cloud as the local costmap.
+        # The raw LIO cloud contains ground grazing, vehicle and sparse
+        # reflection returns even on an empty road; letting it mark this layer
+        # caused false global detours around the chassis.
+        observation_sources: filtered_cloud
+        filtered_cloud:
+          topic: /nav/filtered_obstacle_cloud
           data_type: PointCloud2
           marking: true
           clearing: true
-          min_obstacle_height: -0.15
-          max_obstacle_height: 1.70
-          # Same split as the local voxel layer: far static objects stay
-          # visible early, near-body passers-by are not permanently marked.
+          min_obstacle_height: -0.05
+          max_obstacle_height: 1.35
+          # Match the local layer. Dense obstacles are still observed early
+          # enough for replanning, while isolated empty-road returns are not.
           obstacle_min_range: 1.00
-          obstacle_max_range: 10.0
+          obstacle_max_range: 5.0
           raytrace_min_range: 0.05
-          raytrace_max_range: 12.0
+          raytrace_max_range: 6.0
           observation_persistence: 0.0
           expected_update_rate: 0.0
 
@@ -427,9 +431,11 @@ global_costmap:
         enabled: true
         topic: /nav/filtered_obstacle_cloud
         map_topic: /map
-        inflation_radius: 0.60
+        # Match the local live-obstacle halo so global replans begin avoiding
+        # a newly observed object before the vehicle reaches it.
+        inflation_radius: 0.85
         inscribed_radius: 0.30
-        cost_scaling_factor: 4.0
+        cost_scaling_factor: 3.0
         min_obstacle_height: -0.05
         max_obstacle_height: 1.35
         obstacle_min_range: 0.18
