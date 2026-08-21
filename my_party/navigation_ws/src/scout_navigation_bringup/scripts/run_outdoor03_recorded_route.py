@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from pathlib import Path
 
 import rclpy
@@ -15,12 +16,14 @@ import run_outdoor2_recorded_route as outdoor2
 
 MAP_DIR = Path("/home/nvidia/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_03")
 POSES_FILE = MAP_DIR / "recorded_poses.yaml"
-ROUTE_IDS = tuple(range(1, 20))
+ROUTE_IDS = tuple(range(1, 21))
 # The point immediately before every pre-stop is also used as a low-speed
 # docking lead-in. This keeps the whole final approach precise without adding
 # separately recorded guide poses.
 STAGING_IDS = {3, 7, 12, 16}
 FINAL_LEG_MAX_SPEED_MPS = 0.60
+FINAL_APPROACH_SPEED_MPS = 0.30
+FINAL_OBSERVATION_HOLD_SEC = 3.0
 OUTDOOR_OLD_PRECISION_BT = str(
     Path("/home/nvidia/auto/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/") /
     "scout_navigation_bringup/behavior_trees/navigate_to_pose_outdoor_precision.xml"
@@ -199,7 +202,23 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
             self._set_nav_cruise_speed(FINAL_LEG_MAX_SPEED_MPS)
         except Exception as error:
             self.get_logger().warning(f"终点段限速失败（{error}）；按当前巡航速度前往")
-        if not self._ordinary_until_success((18, 19), "准备避障至终点 18--19（最大 0.6 m/s）"):
+        if not self._ordinary_until_success((18, 19), "准备避障至观察点 18--19（最大 0.6 m/s）"):
+            return 130
+        self._stop()
+        self.get_logger().info(
+            f"已到达准备避障点19，停车观察 {FINAL_OBSERVATION_HOLD_SEC:.1f}s 后重新规划"
+        )
+        deadline = time.monotonic() + FINAL_OBSERVATION_HOLD_SEC
+        while rclpy.ok() and time.monotonic() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.1)
+        self._refresh_costmaps_at_observation_point()
+        try:
+            self.set_parameters([Parameter("cruise_speed", value=FINAL_APPROACH_SPEED_MPS)])
+            self._set_nav_cruise_speed(FINAL_APPROACH_SPEED_MPS)
+            self.get_logger().info("19→20 最终避障段限速为 0.30 m/s")
+        except Exception as error:
+            self.get_logger().warning(f"最终避障段限速失败（{error}）；继续重新规划")
+        if not self._ordinary_until_success((20,), "观察点19至终点20（重新规划，最大0.30 m/s）"):
             return 130
         self.get_logger().info("outdoor_03 全部启用路点完成；按 Ctrl+C 才退出")
         while rclpy.ok():

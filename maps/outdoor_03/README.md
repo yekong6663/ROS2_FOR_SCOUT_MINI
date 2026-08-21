@@ -37,7 +37,8 @@
 | 16 | 放置预停点（复用点7） | 17.05 | -28.52 | -3.109 |
 | 17 | 放置点（复用点8） | 15.92 | -28.58 | 3.139 |
 | 18 | 准备避障 | 6.01 | -28.84 | -3.085 |
-| 19 | 终点 | 1.33 | -5.69 | 1.557 |
+| 19 | 准备避障 | 3.516 | -26.854 | 1.600 |
+| 20 | 终点 | 1.33 | -5.69 | 1.557 |
 
 ## 路线执行顺序
 
@@ -125,6 +126,14 @@ ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 ```bash
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 SKIP_OUTBOUND=1 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=1 \
+ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
+
+```
+
+全部
+```bash
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=1 ARM_HANDOFF_ENABLED=1 \
 ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 
 ```

@@ -25,6 +25,7 @@ from nav2_msgs.action import (
     NavigateThroughPoses,
     NavigateToPose,
 )
+from nav2_msgs.srv import ClearEntireCostmap
 from nav_msgs.msg import Odometry
 from rclpy.action import ActionClient
 from rclpy.duration import Duration
@@ -185,6 +186,12 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         self._smoother_set_parameters = self.create_client(
             SetParameters, "/velocity_smoother/set_parameters"
         )
+        self._clear_local_costmap = self.create_client(
+            ClearEntireCostmap, "/local_costmap/clear_entirely_local_costmap"
+        )
+        self._clear_global_costmap = self.create_client(
+            ClearEntireCostmap, "/global_costmap/clear_entirely_global_costmap"
+        )
         self._pipeline_result_sequence = 0
         self._pipeline_result = None
         self._target_item_id = ""
@@ -278,6 +285,23 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             if failures:
                 raise RuntimeError(f"{label} failed: " + "; ".join(failures))
 
+    def _refresh_costmaps_at_observation_point(self):
+        """Clear stale obstacle data before the final short approach."""
+        request = ClearEntireCostmap.Request()
+        for client, label in (
+            (self._clear_local_costmap, "local costmap"),
+            (self._clear_global_costmap, "global costmap"),
+        ):
+            if not client.wait_for_service(timeout_sec=2.0):
+                self.get_logger().warning(f"{label} 清理服务不可用；继续重新规划")
+                continue
+            future = client.call_async(request)
+            rclpy.spin_until_future_complete(self, future, timeout_sec=3.0)
+            if future.done() and future.result() is not None:
+                self.get_logger().info(f"已清理 {label}")
+            else:
+                self.get_logger().warning(f"{label} 清理超时；继续重新规划")
+
     def _nav_speed_for_staging_approach(self):
         try:
             return max(
@@ -355,6 +379,7 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             "base_grasp_pre_scan_advance_m": 0.70,
             "base_grasp_pre_scan_speed_mps": 0.10,
             "base_grasp_pre_scan_timeout_s": 20.0,
+            "base_grasp_diagonal_enabled": True,
             # The photo-card table is on the left in the current observation
             # frame. Keep the matcher away from the right-only legacy ROI.
             "target_card_search_roi_norm": [0.05, 0.05, 0.55, 0.85],
