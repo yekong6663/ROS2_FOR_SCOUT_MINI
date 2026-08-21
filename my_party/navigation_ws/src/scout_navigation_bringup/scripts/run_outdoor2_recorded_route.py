@@ -176,6 +176,9 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         self._placement_execute = self.create_client(
             Trigger, "/grasp_pipeline/execute_aligned_place"
         )
+        self._fallback_place = self.create_client(
+            Trigger, "/grasp_pipeline/execute_fallback_place"
+        )
         self._controller_set_parameters = self.create_client(
             SetParameters, "/controller_server/set_parameters"
         )
@@ -301,6 +304,7 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             (self._pipeline_set_parameters, "/grasp_pipeline/set_parameters"),
             (self._placement_align, "/grasp_pipeline/scan_and_align_placement_target"),
             (self._placement_execute, "/grasp_pipeline/execute_aligned_place"),
+            (self._fallback_place, "/grasp_pipeline/execute_fallback_place"),
         ):
             if not client.wait_for_service(timeout_sec=3.0):
                 raise RuntimeError(f"{label} is unavailable")
@@ -394,9 +398,11 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             "observation_speed": 25,
             "base_target_alignment_enabled": True,
             "base_aligned_place_enabled": False,
-            # The release returns the arm home, but leaves the chassis still.
-            # The recorded Nav2 route is the sole owner of the next motion.
-            "post_place_base_advance_enabled": False,
+            # After release/retreat the arm owns one short exit: turn left
+            # by 10 degrees, drive 0.8 m, return to the original heading.
+            # Nav2 resumes only after this action has completed.
+            "post_place_base_advance_enabled": True,
+            "post_place_base_left_forward_enabled": True,
             # Park so the box label is near the taught center pixel, then
             # release with the taught (u, v)->XY map.
             "base_target_center_tolerance_norm": 0.12,
@@ -428,7 +434,8 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             self._set_pipeline_parameters(
                 {
                     "base_aligned_place_enabled": False,
-                    "post_place_base_advance_enabled": True,
+                    "post_place_base_advance_enabled": False,
+                    "post_place_base_left_forward_enabled": False,
                 }
             )
         if not placement.success:
@@ -442,8 +449,11 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
         # never compete with Nav2 or the arm's scan controller.
         self._cmd_pub.publish(Twist())
 
-    def _handoff_limited(self, label, operation):
-        max_retries = max(0, int(self.get_parameter("recognition_max_retries").value))
+    def _handoff_limited(self, label, operation, *, max_retries=None):
+        if max_retries is None:
+            max_retries = max(0, int(self.get_parameter("recognition_max_retries").value))
+        else:
+            max_retries = max(0, int(max_retries))
         for attempt in range(1 + max_retries):
             if not rclpy.ok():
                 return False
@@ -465,6 +475,56 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             while rclpy.ok() and time.monotonic() < deadline:
                 rclpy.spin_once(self, timeout_sec=0.1)
         return False
+
+    def discard_held_object_after_place_failure(self, round_index: int) -> None:
+        """Release a held item when its final placement scan/execution failed.
+
+        The arm pipeline leaves the chassis at the last inspected scan view;
+        It first executes a full approach/release/retreat plan using a random
+        manually taught release sample for the known item. Navigation can then
+        own the base immediately instead of carrying an item into the next
+        round.
+        """
+        self._stop()
+        try:
+            self._set_pipeline_parameters(
+                {
+                    "post_place_base_advance_enabled": True,
+                    "post_place_base_left_forward_enabled": True,
+                }
+            )
+            response = self._call_service(
+                self._fallback_place,
+                Trigger.Request(),
+                label="discard held item (fallback place plan)",
+                timeout=180.0,
+            )
+            if response.success:
+                self.get_logger().warning(
+                    f"Round {round_index}: placement abandoned; fallback place completed"
+                )
+            else:
+                self.get_logger().error(
+                    f"Round {round_index}: placement abandoned and fallback place failed: "
+                    f"{response.message}"
+                )
+        except Exception as error:
+            self.get_logger().error(
+                f"Round {round_index}: placement abandoned but fallback place service failed: {error}"
+            )
+        finally:
+            try:
+                self._set_pipeline_parameters(
+                    {
+                        "post_place_base_advance_enabled": False,
+                        "post_place_base_left_forward_enabled": False,
+                    }
+                )
+            except Exception as error:
+                self.get_logger().error(
+                    f"Round {round_index}: could not restore post-place base settings: {error}"
+                )
+            self._target_item_id = ""
 
     def _wait_external_until_success(self, label, command):
         """Run a gate while retaining this node's DDS discovery and TF state."""
@@ -1346,6 +1406,9 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
                 if self._handoff_limited(
                     f"Round {round_index}: placement reached; handing control to the arm pipeline",
                     self.place_handoff,
+                    # The pipeline itself performs exactly one reverse-scan
+                    # retry.  Do not nest another full scan here.
+                    max_retries=0,
                 ):
                     self.get_logger().info(
                         f"Round {round_index}: placement completed; resuming outdoor navigation"
@@ -1354,6 +1417,7 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
                     self.get_logger().warning(
                         f"Round {round_index}: target-box recognition/placement abandoned"
                     )
+                    self.discard_held_object_after_place_failure(round_index)
             elif arm_handoff_enabled:
                 self.get_logger().warning(
                     f"Round {round_index}: skipping placement because pickup did not acquire a target"

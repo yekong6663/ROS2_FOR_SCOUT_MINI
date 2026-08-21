@@ -64,7 +64,9 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
                 Parameter("dock_yaw_tolerance", value=0.12),
                 Parameter("dock_crawl_speed", value=0.12),
                 Parameter("dock_staging_start_position_tolerance", value=0.15),
-                Parameter("dock_staging_start_yaw_tolerance", value=0.18),
+                # Allow normal outdoor LIO heading jitter at a pre-stop;
+                # final grab/place docking keeps its tighter yaw tolerance.
+                Parameter("dock_staging_start_yaw_tolerance", value=0.20),
                 # outdoor_03_old used the ordinary outdoor precision tree for
                 # pre-stops. Restore it rather than the newer simultaneous
                 # staging checker, which chases normal outdoor LIO jitter.
@@ -73,7 +75,9 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
                 # Outdoor FAST-LIO commonly settles with 8--12 cm of
                 # map-to-odom variation. Permit that normal noise but still
                 # reject the 30+ cm jumps seen during failed relocalization.
-                Parameter("max_map_odom_drift_m", value=0.15),
+                # Ignore brief moderate map/odom corrections, but still stop
+                # on a large persistent jump (the hard guard remains active).
+                Parameter("max_map_odom_drift_m", value=0.30),
             ]
         )
         if not all(result.successful for result in results):
@@ -105,9 +109,13 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
 
     def _arm_after_place(self, cycle: int, grasped: bool, enabled: bool) -> None:
         if enabled and grasped:
-            self._handoff_limited(
-                f"第 {cycle} 轮已到放置点，交给机械臂放置", self.place_handoff
+            placed = self._handoff_limited(
+                f"第 {cycle} 轮已到放置点，交给机械臂放置",
+                self.place_handoff,
+                max_retries=0,
             )
+            if not placed:
+                self.discard_held_object_after_place_failure(cycle)
         elif enabled:
             self.get_logger().warning(f"第 {cycle} 轮未抓到物品，跳过机械臂放置交接")
 

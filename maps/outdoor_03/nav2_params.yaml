@@ -119,7 +119,7 @@ controller_server:
       # crawl, so this checker need not continuously chase lidar corrections.
       stateful: true
       xy_goal_tolerance: 0.15
-      yaw_goal_tolerance: 0.18
+      yaw_goal_tolerance: 0.20
 
     FollowPath:
       # MPPI evaluates complete future trajectories instead of steering toward

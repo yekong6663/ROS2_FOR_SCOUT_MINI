@@ -192,13 +192,32 @@ class TwoStagePoint3Dock(Node):
         )
         max_translation = float(self.get_parameter("max_map_odom_drift_m").value)
         max_yaw = float(self.get_parameter("max_map_odom_drift_deg").value)
-        if translation_drift > max_translation or yaw_drift_deg > max_yaw:
+        # A single FAST-LIO correction can produce an implausible spike even
+        # while the chassis is stationary. Ignore isolated spikes; require
+        # three consecutive bad samples before blocking the crawl.
+        bad_samples = [
+            math.hypot(x - ref_x, y - ref_y) > max_translation
+            or abs(math.degrees(normalize(yaw - ref_yaw))) > max_yaw
+            for x, y, yaw in signatures
+        ]
+        consecutive_bad = 0
+        persistent_bad = False
+        for bad in bad_samples:
+            consecutive_bad = consecutive_bad + 1 if bad else 0
+            if consecutive_bad >= 3:
+                persistent_bad = True
+                break
+        if persistent_bad:
             self.get_logger().error(
                 "Cannot start direct crawl: map localization is still jumping "
                 f"(map-odom drift={translation_drift:.3f}m/{yaw_drift_deg:.2f}deg, "
                 f"limits={max_translation:.3f}m/{max_yaw:.2f}deg)"
             )
             return None
+        if any(bad_samples):
+            self.get_logger().warning(
+                "忽略一次性 map→odom 定位跳变，继续执行精细前进"
+            )
         return latest
 
     def _stop(self):

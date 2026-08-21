@@ -118,6 +118,7 @@ ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 SKIP_OUTBOUND=1 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
 ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
+
 ```
 
 挑点，跳过红旗，开启机械臂
