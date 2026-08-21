@@ -21,21 +21,21 @@
 | ---: | --- | ---: | ---: | ---: |
 | 1 | 拐弯1 | 39.79 | -0.09 | 0.013 |
 | 2 | 拐弯2 | 42.47 | -28.19 | -1.569 |
-| 3 | 抓取预停点 | 37.64 | -28.34 | -3.135 |
-| 4 | 抓取点 | 35.21 | -28.16 | -3.109 |
+| 3 | 抓取预停点 | 36.18 | -28.16 | -3.134 |
+| 4 | 抓取点 | 35.22 | -28.16 | -3.112 |
 | 5 | 越过锥桶1 | 27.00 | -30.23 | -3.138 |
 | 6 | 越过锥桶2 | 24.71 | -28.43 | -3.087 |
-| 7 | 放置预停点 | 17.48 | -28.62 | -3.133 |
-| 8 | 放置点 | 15.94 | -28.49 | -3.124 |
+| 7 | 放置预停点 | 17.05 | -28.52 | -3.109 |
+| 8 | 放置点 | 15.92 | -28.58 | 3.139 |
 | 9 | 返程点1 | 20.99 | -31.41 | 0.057 |
 | 10 | 返程点2 | 41.99 | -31.01 | -0.016 |
 | 11 | 返程点3 | 44.74 | -28.29 | -3.121 |
-| 12 | 抓取预停点（复用点3） | 37.64 | -28.34 | -3.135 |
-| 13 | 抓取点（复用点4） | 35.21 | -28.16 | -3.109 |
+| 12 | 抓取预停点（复用点3） | 36.18 | -28.16 | -3.134 |
+| 13 | 抓取点（复用点4） | 35.22 | -28.16 | -3.112 |
 | 14 | 越过锥桶1（复用点5） | 27.00 | -30.23 | -3.138 |
 | 15 | 越过锥桶2（复用点6） | 24.71 | -28.43 | -3.087 |
-| 16 | 放置预停点（复用点7） | 17.48 | -28.62 | -3.133 |
-| 17 | 放置点（复用点8） | 15.94 | -28.49 | -3.124 |
+| 16 | 放置预停点（复用点7） | 17.05 | -28.52 | -3.109 |
+| 17 | 放置点（复用点8） | 15.92 | -28.58 | 3.139 |
 | 18 | 准备避障 | 6.01 | -28.84 | -3.085 |
 | 19 | 终点 | 1.33 | -5.69 | 1.557 |
 
@@ -72,6 +72,7 @@ source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 ros2 topic echo /scout_status --once | grep -E 'vehicle_state|control_mode|error_code'
 
 # 终端 1：导航（走去程用默认 initial_pose.yaml）
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 ros2 launch scout_navigation_bringup navigation_system.launch.py \
   map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_03 can_port:=can2
 
@@ -117,4 +118,12 @@ ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 SKIP_OUTBOUND=1 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
 ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
+```
+
+挑点，跳过红旗，开启机械臂
+```bash
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+SKIP_OUTBOUND=1 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=1 \
+ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
+
 ```

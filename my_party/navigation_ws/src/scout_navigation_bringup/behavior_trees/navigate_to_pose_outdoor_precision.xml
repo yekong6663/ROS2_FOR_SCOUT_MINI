@@ -17,7 +17,7 @@
         <FollowPath
           path="{path}"
           controller_id="FollowPath"
-          goal_checker_id="precision_goal_checker"/>
+          goal_checker_id="staging_goal_checker"/>
       </PipelineSequence>
       <ReactiveFallback name="SafeRecoveryFallback">
         <GoalUpdated/>

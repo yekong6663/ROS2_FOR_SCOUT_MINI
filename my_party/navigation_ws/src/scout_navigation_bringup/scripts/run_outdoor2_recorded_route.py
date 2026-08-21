@@ -351,6 +351,9 @@ class Outdoor2RecordedRoute(TwoStagePoint3Dock):
             "base_grasp_pre_scan_advance_m": 0.70,
             "base_grasp_pre_scan_speed_mps": 0.10,
             "base_grasp_pre_scan_timeout_s": 20.0,
+            # The photo-card table is on the left in the current observation
+            # frame. Keep the matcher away from the right-only legacy ROI.
+            "target_card_search_roi_norm": [0.05, 0.05, 0.55, 0.85],
             "target_card_base_search_enabled": True,
             "move_to_placement_observation_after_grasp": True,
             "continuous_search_enabled": True,

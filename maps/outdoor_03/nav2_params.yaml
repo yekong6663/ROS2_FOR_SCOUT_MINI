@@ -109,17 +109,17 @@ controller_server:
       xy_goal_tolerance: 0.10
       yaw_goal_tolerance: 0.12
 
-    # Every grab/place pre-stop is a high-precision staging pose. Keep the
-    # proven outdoor_03_old profile so normal LIO correction does not make a
-    # correctly reached pre-stop circle indefinitely.
+    # Pre-stops are accurate enough for the final crawl but slightly looser
+    # than the grab/place goal, preventing harmless LIO jitter from causing
+    # loops at the pre-stop.
     staging_goal_checker:
       plugin: nav2_controller::SimpleGoalChecker
       # Retain the proven outdoor_03_old arrival behavior. The route performs
       # a separate post-arrival localization/staging check before the final
       # crawl, so this checker need not continuously chase lidar corrections.
       stateful: true
-      xy_goal_tolerance: 0.10
-      yaw_goal_tolerance: 0.12
+      xy_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.18
 
     FollowPath:
       # MPPI evaluates complete future trajectories instead of steering toward

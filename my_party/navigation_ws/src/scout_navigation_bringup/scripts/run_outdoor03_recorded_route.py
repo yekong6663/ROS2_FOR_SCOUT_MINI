@@ -63,8 +63,8 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
                 Parameter("dock_position_tolerance", value=0.10),
                 Parameter("dock_yaw_tolerance", value=0.12),
                 Parameter("dock_crawl_speed", value=0.12),
-                Parameter("dock_staging_start_position_tolerance", value=0.10),
-                Parameter("dock_staging_start_yaw_tolerance", value=0.12),
+                Parameter("dock_staging_start_position_tolerance", value=0.15),
+                Parameter("dock_staging_start_yaw_tolerance", value=0.18),
                 # outdoor_03_old used the ordinary outdoor precision tree for
                 # pre-stops. Restore it rather than the newer simultaneous
                 # staging checker, which chases normal outdoor LIO jitter.
