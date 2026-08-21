@@ -22,32 +22,26 @@
 | 1 | 拐弯1 | 39.79 | -0.09 | 0.013 |
 | 2 | 拐弯2 | 42.47 | -28.19 | -1.569 |
 | 3 | 抓取预停点 | 36.555 | -28.383 | -3.118 |
-| 4 | 抓取点 | 35.175 | -28.397 | -3.122 |
 | 5 | 越过锥桶1 | 27.00 | -30.23 | -3.138 |
-| 6 | 越过锥桶2 | 24.71 | -28.43 | -3.087 |
+| 6 | 越过锥桶2 | 21.174 | -28.228 | -3.125 |
 | 7 | 放置预停点 | 17.05 | -28.52 | -3.109 |
-| 8 | 放置点 | 15.92 | -28.58 | 3.139 |
 | 9 | 返程点1 | 20.99 | -31.41 | 0.057 |
-| 10 | 返程点2 | 41.99 | -31.01 | -0.016 |
-| 11 | 返程点3 | 44.74 | -28.29 | -3.121 |
+| 10 | 返程点2 | -40.172 | -31.352 | -0.094 |
 | 12 | 抓取预停点（复用点3） | 36.555 | -28.383 | -3.118 |
-| 13 | 抓取点（复用点4） | 35.175 | -28.397 | -3.122 |
 | 14 | 越过锥桶1（复用点5） | 27.00 | -30.23 | -3.138 |
-| 15 | 越过锥桶2（复用点6） | 24.71 | -28.43 | -3.087 |
+| 15 | 越过锥桶2（复用点6） | 21.174 | -28.228 | -3.125 |
 | 16 | 放置预停点（复用点7） | 17.05 | -28.52 | -3.109 |
-| 17 | 放置点（复用点8） | 15.92 | -28.58 | 3.139 |
-| 18 | 准备避障 | 6.01 | -28.84 | -3.085 |
 | 19 | 准备避障 | 3.516 | -26.854 | 1.600 |
 | 20 | 终点 | 1.33 | -5.69 | 1.557 |
 
 ## 路线执行顺序
 
-完整路线按 `1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19` 执行。
+完整路线按 `1 → 2 → 3 → 5 → 6 → 7 → 9 → 10 → 12 → 14 → 15 → 16 → 19 → 20` 执行。
 
-- 点 3→4、7→8、12→13、16→17：先使用普通导航到高精度预停点，再低速精细停车到抓取/放置点；其余点均为普通导航点。
-- 点 5→6、14→15：锥桶路段按普通导航连续通过，中间不为对准航向而停车。
-- 点 4、8、13、17：仅在 `ARM_HANDOFF_ENABLED=1` 时交给机械臂；设为 `0` 时只运行导航。
-- `RED_FLAG_START_ENABLED=0` 跳过红旗；`SKIP_OUTBOUND=1` 跳过点 1，从点 2 开始。
+- 抓取/放置点 4、8、13、17 已删除；预停点按普通低精度导航通过。
+- 点 19 是新的准备避障观察点：到达后停车 3 秒、清理代价地图，再以 `0.30 m/s` 重新规划到终点 20。
+- `RED_FLAG_START_ENABLED=0` 跳过红旗；`SKIP_OUTBOUND=1` 从点 2 开始。
+- `SKIP_TO_PREPARE=1` 使用点 19 的初始位姿，跳过前面路线，直接执行点 19 的观察和终点流程。
 
 ## 后续操作
 
@@ -82,16 +76,13 @@ source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 SKIP_OUTBOUND=1 ros2 launch scout_navigation_bringup navigation_system.launch.py \
   map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_03 can_port:=can2
 
-# 终端 2～4：机械臂（与现在相同）
-cd ~/auto/Robot_arm/source
-./scripts/run_piper_driver.sh
-./scripts/run_piper_moveit_ik.sh
-source ./scripts/ros_env_graspnet.sh
-./scripts/run_distributed_stack_graspnet.sh --robot-backend ros2 \
-  --pose-execution-mode moveit_ik --with-piper-driver --with-moveit-ik --warmup
-ros2 service call /grasp_pipeline/probe std_srvs/srv/Trigger "{}"
+# 直接从新的准备避障点19开始：导航使用 skip_prepare_obstacle_initial_pose.yaml
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+SKIP_TO_PREPARE=1 ros2 launch scout_navigation_bringup navigation_system.launch.py \
+  map_dir:=~/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_03 can_port:=can2
 
-# 终端 5：完整任务。等红旗，到抓取/放置点后交给机械臂。
+
+# 终端 5：完整路线（当前仅导航，不再执行抓取/放置交接）。
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=1 ARM_HANDOFF_ENABLED=1 \
 ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
@@ -113,11 +104,11 @@ SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
 ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 ```
 
-跳过拐弯1（点 3）、直接从拐弯2（点 4）开始测试导航：
+直接从新的准备避障点19开始测试：
 
 ```bash
 source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
-SKIP_OUTBOUND=1 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
+SKIP_TO_PREPARE=1 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
 ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 
 ```
@@ -136,4 +127,23 @@ source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
 SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=1 ARM_HANDOFF_ENABLED=1 \
 ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 
+```
+
+当前 outdoor_03 路线所有目标点均为低精度坐标目标：只要求到达 x/y 范围，不要求记录的朝向 yaw；预停点也不再使用高精度停车。
+
+无红旗、无机械臂接管、不跳过任何路线点（正常启动，不延迟）：
+
+```bash
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
+ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
+```
+
+如需完整地图测试时在发布第一个目标点前延迟 30 秒（不是延迟启动导航）：
+
+```bash
+source ~/auto/ROS2_FOR_SCOUT_MINI/setup_local.bash
+SKIP_OUTBOUND=0 RED_FLAG_START_ENABLED=0 ARM_HANDOFF_ENABLED=0 \
+OUTDOOR03_STARTUP_DELAY_SEC=30 \
+ros2 run scout_navigation_bringup run_outdoor03_recorded_route.sh
 ```

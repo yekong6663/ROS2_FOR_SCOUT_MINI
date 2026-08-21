@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the 2026-08-21 outdoor_03 route with precise pickup/place docks."""
+"""Run the outdoor_03 route with position-only, low-precision waypoints."""
 
 from __future__ import annotations
 
@@ -16,14 +16,18 @@ import run_outdoor2_recorded_route as outdoor2
 
 MAP_DIR = Path("/home/nvidia/auto/ROS2_FOR_SCOUT_MINI/maps/outdoor_03")
 POSES_FILE = MAP_DIR / "recorded_poses.yaml"
-ROUTE_IDS = tuple(range(1, 21))
+ROUTE_IDS = (1, 2, 3, 5, 6, 7, 9, 10, 12, 14, 15, 16, 19, 20)
 # The point immediately before every pre-stop is also used as a low-speed
 # docking lead-in. This keeps the whole final approach precise without adding
 # separately recorded guide poses.
-STAGING_IDS = {3, 7, 12, 16}
+STAGING_IDS = set()
 FINAL_LEG_MAX_SPEED_MPS = 0.60
+TRANSIT_SPEED_MPS = 1.00
 FINAL_APPROACH_SPEED_MPS = 0.30
 FINAL_OBSERVATION_HOLD_SEC = 3.0
+# No startup delay during normal operation.  Set
+# OUTDOOR03_STARTUP_DELAY_SEC explicitly when a full-map test needs a pause.
+STARTUP_DELAY_SEC = 0.0
 OUTDOOR_OLD_PRECISION_BT = str(
     Path("/home/nvidia/auto/ROS2_FOR_SCOUT_MINI/my_party/navigation_ws/src/") /
     "scout_navigation_bringup/behavior_trees/navigate_to_pose_outdoor_precision.xml"
@@ -89,7 +93,11 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
         self._route_label = "run_outdoor03_recorded_route"
 
     def _ordinary_until_success(self, ids: tuple[int, ...], label: str) -> bool:
-        return self._navigate_through_until_success([self._points[number] for number in ids], label)
+        # All outdoor_03 points are now ordinary position-only waypoints:
+        # do not enforce recorded yaw or a high-precision parking checker.
+        return self._navigate_sequence_until_success(
+            [self._points[number] for number in ids], label
+        )
 
     def _cone_until_success(self, ids: tuple[int, ...], label: str) -> bool:
         """Pass the cone slalom loosely: point-by-point position-only goals so
@@ -125,10 +133,12 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
     def run(self) -> int:
         arm_enabled = os.environ.get("ARM_HANDOFF_ENABLED", "1") == "1"
         skip_outbound = os.environ.get("SKIP_OUTBOUND", "0") == "1"
+        skip_to_prepare = os.environ.get("SKIP_TO_PREPARE", "0") == "1"
         red_flag_enabled = os.environ.get("RED_FLAG_START_ENABLED", "1") == "1"
         self.get_logger().info(
             "outdoor_03 启动模式："
             f"SKIP_OUTBOUND={'1' if skip_outbound else '0'}，"
+            f"SKIP_TO_PREPARE={'1' if skip_to_prepare else '0'}，"
             f"RED_FLAG_START_ENABLED={'1' if red_flag_enabled else '0'}，"
             f"ARM_HANDOFF_ENABLED={'1' if arm_enabled else '0'}"
         )
@@ -163,7 +173,41 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
         if not self._wait_for_server():
             return 130
 
-        if skip_outbound:
+        # Apply the transit speed once before the ordinary route. Pre-stop
+        # markers are ordinary pass-through points and must not trigger the
+        # inherited staging approach slowdown.
+        try:
+            self.set_parameters([Parameter("cruise_speed", value=TRANSIT_SPEED_MPS)])
+            self._set_nav_cruise_speed(TRANSIT_SPEED_MPS)
+            self.get_logger().info("普通路线（含预停点）巡航速度限制为 1.00 m/s")
+        except Exception as error:
+            self.get_logger().warning(f"普通路线限速设置失败（{error}）；按当前控制器速度运行")
+
+        # Delay only before publishing the first route goal. Navigation and
+        # localization are already initialized; subsequent goals are sent
+        # without this startup pause.
+        startup_delay = max(
+            0.0, float(os.environ.get("OUTDOOR03_STARTUP_DELAY_SEC", STARTUP_DELAY_SEC))
+        )
+        if startup_delay > 0.0:
+            self.get_logger().info(
+                f"初始化完成，首个目标点将在 {startup_delay:.0f} 秒后发布"
+            )
+            deadline = time.monotonic() + startup_delay
+            last_reported = None
+            while rclpy.ok() and time.monotonic() < deadline:
+                remaining = max(0, int(deadline - time.monotonic() + 0.999))
+                if remaining != last_reported:
+                    self.get_logger().info(f"首个目标点倒计时：{remaining} 秒")
+                    last_reported = remaining
+                rclpy.spin_once(self, timeout_sec=0.1)
+            self.get_logger().info("倒计时结束，发布首个目标点")
+
+        if skip_to_prepare:
+            self.get_logger().warning(
+                "SKIP_TO_PREPARE=1：已用新准备避障点19作为初始位姿，跳过前置路线"
+            )
+        elif skip_outbound:
             # Point 2 is the relocalization pose selected by
             # skip_outbound_initial_pose.yaml. Do not send a second Nav2 goal
             # to the same pose: at a tight/partly occupied start pose Nav2 may
@@ -174,27 +218,18 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
         elif not self._ordinary_until_success((1, 2), "拐弯点 1--2"):
             return 130
 
-        if not self._dock_until_complete(3, 4, "抓取预停点 3 到抓取点 4（精细停车）"):
-            return 130
-        grasped = self._arm_after_pickup(1, arm_enabled)
+        if arm_enabled:
+            self.get_logger().warning(
+                "当前路线已删除抓取/放置点，忽略 ARM_HANDOFF_ENABLED，机械臂不参与路线"
+            )
 
-        if not self._cone_until_success((5, 6), "越过锥桶 5--6（快速通过）"):
+        # The four pre-stop markers remain as ordinary low-precision transit
+        # points. The deleted grab/place poses are intentionally not visited.
+        if not skip_to_prepare and not self._ordinary_until_success(
+            (3, 5, 6, 7, 9, 10, 12, 14, 15, 16),
+            "预停点与返程路线（普通精度）",
+        ):
             return 130
-        if not self._dock_until_complete(7, 8, "放置预停点 7 到放置点 8（精细停车）"):
-            return 130
-        self._arm_after_place(1, grasped, arm_enabled)
-
-        if not self._ordinary_until_success((9, 10, 11), "返程点 1、2、3"):
-            return 130
-        if not self._dock_until_complete(12, 13, "抓取预停点 12 到抓取点 13（精细停车）"):
-            return 130
-        grasped = self._arm_after_pickup(2, arm_enabled)
-
-        if not self._cone_until_success((14, 15), "越过锥桶 14--15（快速通过）"):
-            return 130
-        if not self._dock_until_complete(16, 17, "放置预停点 16 到放置点 17（精细停车）"):
-            return 130
-        self._arm_after_place(2, grasped, arm_enabled)
 
         # The terminal leg is still ordinary navigation, but cap it at 0.6 m/s
         # whenever its next point is the final endpoint (point 19).
@@ -202,8 +237,11 @@ class Outdoor3RecordedRoute(outdoor2.Outdoor2RecordedRoute):
             self._set_nav_cruise_speed(FINAL_LEG_MAX_SPEED_MPS)
         except Exception as error:
             self.get_logger().warning(f"终点段限速失败（{error}）；按当前巡航速度前往")
-        if not self._ordinary_until_success((18, 19), "准备避障至观察点 18--19（最大 0.6 m/s）"):
-            return 130
+        if not skip_to_prepare:
+            if not self._ordinary_until_success(
+                (19,), "前往新准备避障观察点19（最大 0.6 m/s）"
+            ):
+                return 130
         self._stop()
         self.get_logger().info(
             f"已到达准备避障点19，停车观察 {FINAL_OBSERVATION_HOLD_SEC:.1f}s 后重新规划"

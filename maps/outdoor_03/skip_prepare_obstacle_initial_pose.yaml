@@ -1,0 +1,9 @@
+# Used when launching outdoor_03 with SKIP_TO_PREPARE=1.
+# Recorded point 19: new prepare-obstacle observation point.
+initial_pose:
+  x: 3.516
+  y: -26.854
+  z: 0.0
+  yaw: 1.600
+  pitch: 0.0
+  roll: 0.0

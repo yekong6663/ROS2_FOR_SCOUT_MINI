@@ -118,9 +118,18 @@ def _launch_navigation_system(context):
 
     pose_file_argument = LaunchConfiguration("initial_pose_file").perform(context)
     skip_outbound = os.environ.get("SKIP_OUTBOUND", "0") == "1"
+    skip_to_prepare = os.environ.get("SKIP_TO_PREPARE", "0") == "1"
     skip_pose_file = map_dir / "skip_outbound_initial_pose.yaml"
+    prepare_pose_file = map_dir / "skip_prepare_obstacle_initial_pose.yaml"
     if pose_file_argument:
         pose_file = Path(pose_file_argument).expanduser().resolve()
+    elif skip_to_prepare:
+        if not prepare_pose_file.is_file():
+            raise RuntimeError(
+                "SKIP_TO_PREPARE=1 需要 "
+                f"{prepare_pose_file}（新准备避障点19的重定位初值）。"
+            )
+        pose_file = prepare_pose_file
     elif skip_outbound:
         if not skip_pose_file.is_file():
             raise RuntimeError(
